@@ -1,0 +1,33 @@
+{
+    "name": "dovetaily/crafteus",
+    "type": "library",
+    "license": "Apache-2.0",
+    "description": "An advanced tool for generating stub files from custom 'Ecosystems'. Designers can create Ecosystems composed of multiple dynamic Templates, defining specific configurations and transformation logic. Users can leverage these Ecosystems to provide data, which will be processed by the designers' configurations and transformed into tailored stub files.",
+    "keywords": [
+        "configuration",
+        "dynamic templates",
+        "ecosystem",
+        "file generation",
+        "file generator",
+        "generator",
+        "php",
+        "stub",
+        "stub generation",
+        "stub generator",
+        "template"
+    ],
+    "autoload": {
+        "psr-4": {
+            "Crafteus\\": "src/"
+        }
+    },
+    "homepage" : "https://github.com/dovetaily/crafteus",
+    "authors": [
+        {
+            "name": "Gedeon Timothy",
+            "homepage": "https://github.com/gedeontimothy",
+            "email": "gedeonbateko3@gmail.com",
+            "role": "Developer"
+        }
+    ]
+}
