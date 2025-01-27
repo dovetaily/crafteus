@@ -3,6 +3,7 @@
 namespace Crafteus\Environment;
 
 use Crafteus\Exceptions\FoundationAlreadyExistsException;
+use Crafteus\Support\Helper;
 use Exception;
 
 class App
@@ -95,6 +96,38 @@ class App
 	 */
 	public function getFoundation(string|int $name) : Foundation|null {
 		return isset($this->foundations[$name]) ? $this->foundations[$name] : null;
+	}
+	
+	/**
+	 * Generate all foundation templates on the ecosystem.
+	 *
+	 * @return array Returns generate results of all foundations
+	 * 
+	 */
+	public function generate() : array {
+		$results = [];
+		foreach ($this->foundations as $key => $foundation) {
+			$results[$key] = $foundation
+				->getEcosystemInstance()
+				->generateTemplates()
+			;
+		}
+		return $results;
+	}
+	
+	/**
+	 * Cancel all generate templates on the ecosystem.
+	 *
+	 * @return array Returns generate results of all foundations
+	 * 
+	 */
+	public function cancelGenerated() : void {
+		foreach ($this->foundations as $key => $foundation) {
+			$results[$key] = $foundation
+				->getEcosystemInstance()
+				->cancelTemplatesGenerated()
+			;
+		}
 	}
 
 }

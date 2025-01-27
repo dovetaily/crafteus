@@ -16,9 +16,14 @@ class Ecosystem
 
 	protected array $rules = [];
 
+	/**
+	 * [Description for $templates_instance]
+	 *
+	 * @var array<Template>
+	 */
 	protected array $templates_instance = [];
 
-	protected bool $init_stub_content = true;
+	protected bool $init_stub_content = false;
 
 	/**
 	 * [Description for $replace_exist_file]
@@ -26,11 +31,10 @@ class Ecosystem
 	 * If value is
 	 *  - true : the files
 	 *  - false : the files has not replace
-	 *  - null : you have an question for replace
 	 *
-	 * @var bool|null
+	 * @var bool
 	 */
-	public bool|null $replace_exist_file = null;
+	public bool $replace_exist_file = false;
 
 	public function template() : array {
 
@@ -193,7 +197,7 @@ class Ecosystem
 		return $this->foundation;
 	}
 
-	protected function generateTemplate(Template|string|int $template) : bool {
+	protected function generateTemplate(Template|string|int $template) : bool|array {
 		if((is_string($template) || is_int($template)) && is_subclass_of($st = $this->getTemplateInstance($template), Template::class))
 			$template = $st;
 
@@ -203,14 +207,26 @@ class Ecosystem
 
 		if(is_subclass_of($template, Template::class)){
 			// beforeGenerate
-			$stubs = $template->generateStubsFile();
+			$stubs_result = $template->generateStubsFile();
+
+			return count($stubs_result['not_generated']) == 0 ? true : $stubs_result;
+
 		}
+
 		return false;
 	}
 
-	public function generateTemplates() {
+	public function generateTemplates() : array {
+		$generated = [];
 		foreach ($this->templates_instance as $template_name => $template_instance) {
-			$generated = $this->generateTemplate(template : $template_instance);
+			$generated[$template_name] = $this->generateTemplate(template : $template_instance);
+		}
+		return $generated;
+	}
+
+	public function cancelTemplatesGenerated() : void {
+		foreach ($this->templates_instance as $template_name => $template_instance) {
+			$template_instance->cancelStubsFilesGenerated();
 		}
 	}
 }
