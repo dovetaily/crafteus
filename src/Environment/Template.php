@@ -49,19 +49,6 @@ class Template
 	 */
 	public string|array|\Closure $templating = [];
 
-	// protected function normalizeBaseConfig() : void {
-	// 	foreach ([
-	// 		'path' => 'array',
-	// 		'stub_file' => 'array',
-	// 		'generate' => 'array',
-	// 		'templating' => 'array',
-	// 	] as $key => $type) {
-	// 		if(property_exists($this, $key))
-	// 			if($type == 'array' && !is_array($this->{$key})) 
-	// 				$this->{$key} = [$this->{$key}];
-	// 	}
-	// }
-
 	private function getBaseName(string|int|null $key = null, bool $last = false) : array|string {
 		$name = [$this->getAppName()];
 
@@ -95,7 +82,7 @@ class Template
 		);
 		if($compliant->check()->errorExists()){
 			$m = 'Les données ne sont pas conforme !';
-			Helper::console_err($m . "\n\n". print_r($compliant->getErrors(), true));
+			// Helper::console_err($m . "\n\n". print_r($compliant->getErrors(), true));
 			throw new \Exception($m, 1);
 		}
 		// Helper::dump($this->current_data, $compliant->check()->errorExists());

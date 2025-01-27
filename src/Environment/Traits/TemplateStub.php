@@ -8,7 +8,7 @@ use Crafteus\Support\Helper;
 trait TemplateStub {
 
 	/**
-	 * [Description for $stubs]
+	 * All stub objects
 	 *
 	 * @var ?array<Stub>
 	 */
@@ -40,15 +40,11 @@ trait TemplateStub {
 				}
 				else{
 					$stub->setTemplating($templating);
-					if($generate_stub_content) $stub->generateContentWithTemplating();
+					if($generate_stub_content)
+						$this->generateStubContent($stub);
 				}
-	
+
 			}
-				// $this->getData();
-				// Helper::dd($this->getPath());
-				// Helper::dump($this->getData());
-				// Helper::dd($this->getEcosystem()->getFoundation()->getName());
-				// Helper::dump($this->ecosystem->getApp());
 		}
 
 		return $this;
@@ -60,7 +56,7 @@ trait TemplateStub {
 		if(is_null($key) || !isset($this->stubs[$key])){
 
 			$stub = new Stub(
-				stub_file_path : $stub_file,
+				stub : $stub_file,
 				file_path : $file_path,
 				template : $this,
 				generate : $generate,
@@ -85,22 +81,28 @@ trait TemplateStub {
 		return !is_null($this->stubs) && isset($this->stubs[$key]) ? $this->stubs[$key] : null;
 	}
 
-	protected function generateStubContent(string|int|null $key = null, ?Stub $stub = null) : void {
-		$stub = is_null($stub) && !is_null($key) && !is_null($st = $this->getStub($key)) ? $st : $stub;
-		if(!is_null($stub))
+	protected function generateStubContent(string|int|Stub $stub) : bool {
+		$stub = is_string($stub) || is_numeric($stub)
+			? $this->getStub($stub)
+			: $stub
+		;
+		if($stub){
+			if($stub->getStubType() == 'file' && preg_match('/.php.stub$/i', $file = $stub->getStub()))
+				$stub->phpStub();
+	
 			$stub->generateContentWithTemplating();
+			return true;
+		}
+		return false;
 	}
-	// public function generateStubsContent() : void {
-	// 	foreach ($this->stubs as $key => $stub) {
-	// 	}
-	// }
+
 	public function generateStubFile(string|int|Stub $stub, bool $generate_stub_content = true) : bool {
 		$stub = is_string($stub) || is_numeric($stub)
 			? $this->getStub($stub)
 			: $stub
 		;
-		if(!is_null($stub) && $stub->generateFile()){
-			if($generate_stub_content) $this->generateStubContent(stub : $stub);
+		if(!is_null($stub) && $stub->generateFile($this->getEcosystem()->replace_exist_file)){
+			if($generate_stub_content) $this->generateStubContent($stub);
 			return true;
 		}
 		// else throw new Exception("Error Processing Request", 1);
@@ -120,9 +122,17 @@ trait TemplateStub {
 			$result[$file_generated ? 'generated' : 'not_generated'][$key] = $stub;
 		}
 		if($cancel_all_on_error && count($result['not_generated']) > 0){
-			// Helper::dump('---sks');
 			array_map(fn ($stub) => $stub->cancelGenerateFile(), $result['not_generated']);
 		}
 		return $result;
+	}
+
+	public function cancelStubsFilesGenerated() : void {
+		$this->initStub(false);
+		if(!empty($this->stubs)){
+			foreach ($this->stubs as $stub)
+				if($stub->isCreated())
+					$stub->cancelGenerateFile();
+		}
 	}
 }
