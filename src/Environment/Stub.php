@@ -9,7 +9,9 @@ use Crafteus\Support\Helper;
 class Stub extends SplFileInfo
 {
 
-	protected string $stub_file_path;
+	protected string $stub;
+
+	protected string $stub_type;
 
 	public ?Template $template = null;
 
@@ -38,7 +40,7 @@ class Stub extends SplFileInfo
 	 */
 	protected array $keywords = [];
 
-	public function __construct(string $stub_file_path, string $file_path, ?Template $template, bool $generate = true, string|int|null $key_id = null) {
+	public function __construct(string $stub, string $file_path, ?Template $template, bool $generate = true, string|int|null $key_id = null) {
 
 		parent::__construct($file_path);
 
@@ -54,9 +56,9 @@ class Stub extends SplFileInfo
 
 		if($this->already_exists) $this->old_content = file_get_contents($file_path);
 		
-		$this->setStubFilePath($stub_file_path);
+		$this->setStub($stub);
 
-		$this->setCurrentContent(file_get_contents($stub_file_path));
+		$this->setCurrentContent($this->getStubContent());
 	}
 
 	public function getTemplate() : ?Template {
@@ -72,15 +74,31 @@ class Stub extends SplFileInfo
 		return $this;
 	}
 
-	public function getStubFilePath() : string {
-		return $this->stub_file_path;
+	public function getStub() : string {
+		return $this->stub;
 	}
 
-	public function setStubFilePath(string $file_path) : void {
+	public function getStubType() : string {
+		return $this->stub_type;
+	}
 
-		if(!is_readable($file_path)) throw new \Exception("Error Processing Request", 1);
+	public function getStubContent() : string {
+		return in_array($this->stub_type, ['file', 'url']) ? file_get_contents($this->getStub()) : $this->getStub();
 
-		$this->stub_file_path = $file_path;
+	}
+
+	public function setStub(string $stub) : void {
+
+		if(is_file($stub)){
+			if(!is_readable($stub)) throw new \Exception("Error Processing Request", 1);
+			$this->stub_type = 'file';
+		}
+		elseif(filter_var($stub, FILTER_VALIDATE_URL) !== false){
+			$this->stub_type = 'url';
+		}
+		else $this->stub_type = 'content';
+
+		$this->stub = $stub;
 
 	}
 
@@ -156,7 +174,10 @@ class Stub extends SplFileInfo
 			// Helper::dd($this->getStubFilePath(), $this->getFilePath(), $this->getCurrentContent());
 
 			if(!is_dir($this->getPath())) mkdir(directory : $this->getPath(), recursive : true);
-			copy($this->getStubFilePath(), $this->getFilePath());
+			if($this->getStubType() === 'file')
+				copy($this->getStub(), $this->getFilePath());
+			else
+				file_put_contents($this->getFilePath(), $this->getStubContent());
 
 			$this->is_created = $is_created;
 			
@@ -167,6 +188,15 @@ class Stub extends SplFileInfo
 		return false;
 		// else throw new Exception("Error Processing Request", 1);
 		
+	}
+	
+	public function phpStub() : void {
+		$c = (function($data, $stub){
+			ob_start();
+			include $stub->getStub();
+			return ob_get_clean();
+		})($this->getData());
+		// Helper::dd($c);
 	}
 
 	public function deleteFile() : bool {
