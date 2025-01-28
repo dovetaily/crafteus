@@ -9,9 +9,9 @@ use Crafteus\Support\Helper;
 class Stub extends SplFileInfo
 {
 
-	protected string $stub;
+	protected string $origine_stub;
 
-	protected string $stub_type;
+	protected string $origine_type;
 
 	public ?Template $template = null;
 
@@ -56,7 +56,7 @@ class Stub extends SplFileInfo
 
 		if($this->already_exists) $this->old_content = file_get_contents($file_path);
 		
-		$this->setStub($stub);
+		$this->setOrigineStub($stub);
 
 		$this->setCurrentContent($this->getStubContent());
 	}
@@ -74,31 +74,31 @@ class Stub extends SplFileInfo
 		return $this;
 	}
 
-	public function getStub() : string {
-		return $this->stub;
+	public function getOrigineStub() : string {
+		return $this->origine_stub;
 	}
 
-	public function getStubType() : string {
-		return $this->stub_type;
+	public function getOrigineType() : string {
+		return $this->origine_type;
 	}
 
 	public function getStubContent() : string {
-		return in_array($this->stub_type, ['file', 'url']) ? file_get_contents($this->getStub()) : $this->getStub();
+		return in_array($this->getOrigineType(), ['file', 'url']) ? file_get_contents($this->getOrigineStub()) : $this->getOrigineStub();
 
 	}
 
-	public function setStub(string $stub) : void {
+	protected function setOrigineStub(string $stub) : void {
 
 		if(is_file($stub)){
 			if(!is_readable($stub)) throw new \Exception("Error Processing Request", 1);
-			$this->stub_type = 'file';
+			$this->origine_type = 'file';
 		}
 		elseif(filter_var($stub, FILTER_VALIDATE_URL) !== false){
-			$this->stub_type = 'url';
+			$this->origine_type = 'url';
 		}
-		else $this->stub_type = 'content';
+		else $this->origine_type = 'content';
 
-		$this->stub = $stub;
+		$this->origine_stub = $stub;
 
 	}
 
@@ -174,8 +174,8 @@ class Stub extends SplFileInfo
 			// Helper::dd($this->getStubFilePath(), $this->getFilePath(), $this->getCurrentContent());
 
 			if(!is_dir($this->getPath())) mkdir(directory : $this->getPath(), recursive : true);
-			if($this->getStubType() === 'file')
-				copy($this->getStub(), $this->getFilePath());
+			if($this->getOrigineType() === 'file')
+				copy($this->getOrigineStub(), $this->getFilePath());
 			else
 				file_put_contents($this->getFilePath(), $this->getStubContent());
 
@@ -193,7 +193,7 @@ class Stub extends SplFileInfo
 	public function phpStub() : void {
 		$c = (function($data, $stub){
 			ob_start();
-			include $stub->getStub();
+			include $stub->getOrigineStub();
 			return ob_get_clean();
 		})($this->getData());
 		// Helper::dd($c);

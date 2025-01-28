@@ -87,7 +87,7 @@ trait TemplateStub {
 			: $stub
 		;
 		if($stub){
-			if($stub->getStubType() == 'file' && preg_match('/.php.stub$/i', $file = $stub->getStub()))
+			if($stub->getOrigineType() == 'file' && preg_match('/.php.stub$/i', $file = $stub->getOrigineStub()))
 				$stub->phpStub();
 	
 			$stub->generateContentWithTemplating();
