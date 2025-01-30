@@ -1,38 +1,41 @@
 <?php
 namespace Crafteus\Environment\Traits;
 
+use Crafteus\Environment\Template;
 use Crafteus\Support\Rule;
 
 trait TemplateRule {
 
 	/**
-	 * Config Rule
+	 * Configuration Rule for the template.
 	 *
 	 * @var array
 	 */
 	protected array $config_rule = [];
 
 	/**
-	 * Data Rule
+	 * Data Rule for the template.
 	 *
 	 * @var array
 	 */
 	protected array $data_rule = [];
 
 	/**
-	 * Get config rule
+	 * Retrieves the configuration rule for the template.
 	 *
-	 * @return array
+	 * @return array The configuration rule.
 	 * 
 	 */
 	public function getConfigRule() : array {
+
 		return $this->config_rule;
+
 	}
 	
 	/**
-	 * Get data rule
+	 * Retrieves the data rule for the template.
 	 *
-	 * @return array
+	 * @return array The data rule.
 	 * 
 	 */
 	public function getDataRule() : array {
@@ -40,21 +43,22 @@ trait TemplateRule {
 	}
 	
 	/**
-	 * Set configuration rule
+	 * Sets the configuration rule for the template.
 	 *
-	 * @param array $rule
+	 * @param array $rule The configuration rule to set.
 	 * 
-	 * @return void
+	 * @return self
 	 * 
 	 */
-	public function setConfigRule(array $rule) : void {
+	public function setConfigRule(array $rule) : Template {
 		$this->config_rule = $rule;
+		return $this;
 	}
 	
 	/**
-	 * Set data rule
+	 * Sets the data rule for the template.
 	 *
-	 * @param array $rule
+	 * @param array $rule The data rule to set.
 	 * 
 	 * @return void
 	 * 
@@ -64,11 +68,11 @@ trait TemplateRule {
 	}
 
 	/**
-	 * Get all rules
+	 * Retrieves all rules (configuration and data).
 	 *
-	 * @param mixed $key
+	 * @param mixed $key Optional key to retrieve a specific rule.
 	 * 
-	 * @return array
+	 * @return array An array containing both 'config' and 'data' rules.
 	 * 
 	 */
 	public function getRules($key) : array {
@@ -78,6 +82,14 @@ trait TemplateRule {
 		];
 	}
 
+	/**
+	 * Provides default configuration for template rules.
+	 *
+	 * @param array $rule Additional rule configuration.
+	 * 
+	 * @return array The merged default and provided rules.
+	 * 
+	 */
 	public static function defaultRuleConfig(array $rule = []) : array {
 		return [
 			...$rule,

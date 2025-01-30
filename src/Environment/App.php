@@ -3,8 +3,6 @@
 namespace Crafteus\Environment;
 
 use Crafteus\Exceptions\FoundationAlreadyExistsException;
-use Crafteus\Support\Helper;
-use Exception;
 
 class App
 {
@@ -38,22 +36,28 @@ class App
 	 * @param array $templates_config Additional configuration for templates. Optional.
 	 * @return self Returns the current instance for method chaining.
 	 */
-	public function make(string $ecosystem, array $data, array $templates_config = []) {
+	public function make(string $ecosystem, array $data, array $templates_config = []) : App{
+
 		foreach ($data as $name => $value) {
+
+			if(is_string($value)){
+				$name = $value;
+				$value = [];
+			}
+
 			$this->addFoundation(
 				$ecosystem,
-				$name, 
-				isset($value['data']) && is_array($value['data'])
-					? $value['data']
-					: []
-				,
-				array_merge($templates_config, isset($value['config']) && is_array($value['config']) && isset($value['config']['template']) && is_array($value['config']['template']) 
-					? $value['config']['template'] 
-					: []
+				$name,
+				$value['data'] ?? [],
+				array_merge(
+					$templates_config,
+					$value['config']['template'] ?? []
 				)
 			);
 		}
+
 		return $this;
+
 	}
 
 	/**
@@ -67,12 +71,14 @@ class App
 	 * @return self Returns the current instance for method chaining.
 	 */
 	private function addFoundation(string $ecosystem, string|int $name, array $data, array $templates_config) {
-		if(!isset($this->foundations[$name])){
-			$this->foundations[$name] = new Foundation($this, $name, $ecosystem, $data, $templates_config);
-		}
-		else throw new FoundationAlreadyExistsException($name, 2100);
-		
+
+		if(isset($this->foundations[$name]))
+			throw new FoundationAlreadyExistsException($name, 2100);
+
+		$this->foundations[$name] = new Foundation($this, $name, $ecosystem, $data, $templates_config);
+
 		return $this;
+
 	}
 
 	/**
@@ -83,9 +89,10 @@ class App
 	 */
 	public function __get($property)
 	{
-		if(!is_null($f = $this->getFoundation($property)))
-			return $f->getEcosystemInstance();
-		return null;
+		return !is_null($f = $this->getFoundation($property))
+			? $f->getEcosystemInstance()
+			: null
+		;
 	}
 
 	/**
@@ -95,7 +102,12 @@ class App
 	 * @return Foundation|null Returns the `Foundation` instance if found, or `false` if not.
 	 */
 	public function getFoundation(string|int $name) : Foundation|null {
-		return isset($this->foundations[$name]) ? $this->foundations[$name] : null;
+
+		return isset($this->foundations[$name])
+			? $this->foundations[$name]
+			: null
+		;
+
 	}
 	
 	/**
@@ -105,16 +117,14 @@ class App
 	 * 
 	 */
 	public function generate() : array {
-		$results = [];
-		foreach ($this->foundations as $key => $foundation) {
-			$results[$key] = $foundation
-				->getEcosystemInstance()
-				->generateTemplates()
-			;
-		}
-		return $results;
+
+		return array_map(
+			fn($foundation) => $foundation->generate(),
+			$this->foundations
+		);
+
 	}
-	
+
 	/**
 	 * Cancel all generate templates on the ecosystem.
 	 *
@@ -122,12 +132,12 @@ class App
 	 * 
 	 */
 	public function cancelGenerated() : void {
-		foreach ($this->foundations as $key => $foundation) {
-			$results[$key] = $foundation
-				->getEcosystemInstance()
-				->cancelTemplatesGenerated()
-			;
-		}
+
+		array_map(
+			fn($foundation) => $foundation->cancelGenerated(), 
+			$this->foundations
+		);
+
 	}
 
 }

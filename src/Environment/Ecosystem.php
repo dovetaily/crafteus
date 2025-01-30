@@ -4,52 +4,101 @@ namespace Crafteus\Environment;
 
 use Crafteus\Environment\Template;
 use Crafteus\Environment\Support\AnonymousTemplate;
+use Crafteus\Exceptions\DuplicateTemplateInstanceException;
 use Crafteus\Exceptions\EcosystemMissingMethodException;
+use Crafteus\Exceptions\InvalidTemplateException;
+use Crafteus\Exceptions\InvalidTemplatePropertyException;
+use Crafteus\Exceptions\InvalidTemplateTypeException;
+use Crafteus\Exceptions\MissingConfigKeyException;
 use Crafteus\Exceptions\TemplateConfigException;
+use Crafteus\Exceptions\TemplateValidationException;
 use Crafteus\Support\Helper;
-use TypeError;
 
 class Ecosystem
 {
 
+	/**
+	 * The instance of the foundation associated with the ecosystem.
+	 *
+	 * @var Foundation|null
+	 */
 	private ?Foundation $foundation;
 
+	/**
+	 * An array of validation rules for templates.
+	 *
+	 * @var array
+	 */
 	protected array $rules = [];
 
 	/**
-	 * [Description for $templates_instance]
+	 * An array of loaded template instances.
 	 *
 	 * @var array<Template>
 	 */
 	protected array $templates_instance = [];
 
+	/**
+	 * Indicates whether the stub content should be initialized at
+	 * the same time as the template is created.
+	 *
+	 * @var bool
+	 */
 	protected bool $init_stub_content = false;
 
 	/**
-	 * [Description for $replace_exist_file]
-	 * 
-	 * If value is
-	 *  - true : the files
-	 *  - false : the files has not replace
+	 * Indicates whether existing files should be replaced.
 	 *
 	 * @var bool
 	 */
 	public bool $replace_exist_file = false;
 
+	/**
+	 * Cancel all files generated on error.
+	 *
+	 * @var bool
+	 */
+	public bool $cancel_all_on_error = false;
+
+	/**
+	 * Abstract method that must be implemented in subclasses to provide templates.
+	 *
+	 * @return array An array of templates.
+	 * @throws EcosystemMissingMethodException If the method is not implemented.
+	 * 
+	 */
 	public function template() : array {
 
 		throw new EcosystemMissingMethodException(static::class, 'template', 3300);
-
-		// throw new \Exception("La classe `" . static::class . "` ne possède pas la méthode `template()`", 1);
 
 		return [];
 
 	}
 
+	/**
+	 * Retrieves the validation rules for templates in the ecosystem.
+	 *
+	 * @return array The validation rules.
+	 * 
+	 */
 	public function getRules() : array {
+
 		return $this->rules;
+
 	}
 	
+	/**
+	 * Retrieves a template instance, or returns false if not found.
+	 *
+	 * @param string|int $template_name The name or identifier of the template.
+	 * @param array $more_config Additional configuration to apply to the instance.
+	 * 
+	 * @return Template|Bool The template instance, or false if not found.
+	 * @throws InvalidTemplateException If the template is invalid.
+	 * @throws InvalidTemplateTypeException If the template type is incorrect.
+	 * @throws DuplicateTemplateInstanceException If an instance of the template already exists.
+	 * 
+	 */
 	public function getTemplateInstance(string|int $template_name, array $more_config = []) : Template|Bool {
 		if(isset($this->templates_instance[$template_name]))
 			return $this->templates_instance[$template_name];
@@ -64,23 +113,25 @@ class Ecosystem
 
 						$ins = new $template;
 
-						// update config...
+						// update config start...
 
-						$ins_config = get_object_vars($ins);
+						$origin_config = get_object_vars($ins);
 						foreach ($more_config as $key => $value) {
-							if(array_key_exists($key, $ins_config) && $ins_config[$key] !== $value){
+							if(array_key_exists($key, $origin_config) && $origin_config[$key] !== $value){
 								try {
 									$ins->$key = $value;
 								} catch (\TypeError $th) {
-									throw new TemplateConfigException(static::class, $key, $template, 4301, $th);
-
-									// throw new \TypeError("Erreur Venant de la classe Ecosystem `" . static::class . "`, veuillez vérifier la validité des données de la clé `" . $key . "` passer à la classe template `" . $template . "`. (" . $th->getMessage() . ")", 1);
-									
+									throw new TemplateConfigException(
+										static::class,
+										$key,
+										$template,
+										previous : $th,
+										code : 4301
+									);
 								}
-								$ins_config[$key] = $value; // more_config
 							}
 						}
-						// var_dump($more_config, get_object_vars($ins));
+						// update config stop...
 
 						$this->compliantTemplateArray(
 							get_object_vars($ins), "Erreur Venant de la classe Ecosystem `" . static::class . "`, veuillez vérifier la validité des propriétés de la classe template `" . $template . "`.",
@@ -95,56 +146,85 @@ class Ecosystem
 
 						$ins->setEcosystem($this);
 						$ins->setTemplateName($template_name);
-						// var_dump(get_object_vars($ins), $ins->getConfigRule());
 
 					}
 					else
-						throw new \Exception("Le template `" . $template . "` n'est pas une héritant de `" . Template::class . "`", 1);
+						throw new InvalidTemplateException($template, code : 3401);
 				}
 				elseif(is_array($template)){
-					if(isset($template['config']) && is_array($template['config'])){
-						// update config...
-						$origin_config = $template['config'];
-						foreach ($more_config as $key => $value) {
-							if(array_key_exists($key, $origin_config) && $origin_config[$key] !== $value){
-								$template['config'][$key] = $value; // more_config
-							}
-						}
-						// var_dump($template['rules']['config']);
-						$this->compliantTemplateArray($template['config'], template_rule : isset($template['rules']) && is_array($template['rules']) && isset($template['rules']['config']) ? $template['rules']['config'] : []);
 
-						// var_dump($template['config']);exit();
-						$ins = new AnonymousTemplate(...$template['config']);
-						$ins->setConfigRule($template['rules']['config']);
-						$ins->setEcosystem($this);
-						$ins->setTemplateName($template_name);
-						if(isset($template['getFileName']) && is_callable($template['getFileName']))
-							$ins->setGetFileName($template['getFileName']);
-					}
-					else
-						throw new \Exception("Error Venant de la classe Ecosystem `" . static::class . "`, veuillez vérifier que la clé `config` existe dans votre template `".$template_name."`", 1);
+					if(!isset($template['config']) || !is_array($template['config']))
+						throw new MissingConfigKeyException($template_name, code : 4303);
 					
-					// var_dump(new AnonymousTemplate(...$template['config']));
-					// var_dump($this->templates_config, $template, $key);
-					// $this->compliantTemplateArray($template, error_message : $error_message);
+					// update config start ...
+					$origin_config = $template['config'];
+
+					foreach ($more_config as $key => $value)
+						if(array_key_exists($key, $origin_config) && $origin_config[$key] !== $value)
+							$template['config'][$key] = $value;
+					// update config stop ...
+
+					$this->compliantTemplateArray(
+						$template['config'],
+						template_rule : $template['rules']['config'] ?? []
+					);
+
+					try {
+						$ins = new AnonymousTemplate(...$template['config']);
+					} catch (\Throwable $th) {
+						throw new InvalidTemplatePropertyException(
+							$template_name, 
+							code : 4306,
+							previous: $th
+						);
+						
+					}
+
+					$ins
+						->setConfigRule($template['rules']['config'])
+						->setEcosystem($this)
+						->setTemplateName($template_name)
+					;
+					if(isset($template['getFileName']) && is_callable($template['getFileName']))
+						$ins->setGetFileName($template['getFileName']);
+
 				}
-				else throw new \Exception("Error Processing Request", 1);
+				else throw new InvalidTemplateTypeException(
+					$template_name,
+					static::class,
+					code : 4304
+				);
 
 				if($ins){
 					if($this->addTemplateInstance($template_name, $ins)){
 						return $this->templates_instance[$template_name];
 					}
-					throw new \Exception("L'instance du template `".$template_name." existe déjà pour l'écosystème de cette fondation`", 1);
+					throw new DuplicateTemplateInstanceException(
+						$template_name,
+						static::class,
+						$this->foundation->getName(),
+						code : 3302
+					);
 				}
 			}
 		}
 		return false;
 	}
 	
+	/**
+	 *  Cleans and validates the properties of a given template according to the defined configuration rules.
+	 * This method ensures that the template's properties comply with the expected structure and values.
+	 *
+	 * @param Template $template The template instance to clean and validate.
+	 * 
+	 * @return void
+	 * @throws TemplateValidationException If the template's properties do not comply with the expected rules.
+	 * 
+	 */
 	protected function cleanTemplate(Template $template) : void {
 		$this->compliantTemplateArray(
 			get_object_vars($template),
-			AnonymousTemplate::class == get_class($template) ? null : "Error Venant de la classe Ecosystem `" . self::class . "`, veuillez vérifier la validité des propriétés de la classe template `" . $template . "`.",
+			AnonymousTemplate::class == get_class($template) ? null : "Error from the `" . static::class . "` ecosystem class, please check the validity of the template class properties (or the configuration of the table of this template) or the configurations added in `Crafteus::make`.",
 			compliant_message: AnonymousTemplate::class == get_class($template) ? [] : [
 				'required' => 'The class property `:name` is required',
 				'type' => 'The class property `:name` type is not available :available_type',
@@ -155,6 +235,17 @@ class Ecosystem
 		);
 	}
 	
+	/**
+	 * Adds a template instance to the ecosystem's collection of templates.
+	 * If the template instance already exists, it will not be added again.
+	 * This method ensures that each template has only one instance in the ecosystem.
+	 * 
+	 * @param string $template_name The name of the template.
+	 * @param Template $template The template instance to add.
+	 * 
+	 * @return bool Returns true if the template was successfully added, false if it already exists.
+	 * 
+	 */
 	protected function addTemplateInstance(string $template_name, Template $template) : bool {
 		if(!isset($this->templates_instance[$template_name])){
 			$this->templates_instance[$template_name] = $template;
@@ -163,47 +254,109 @@ class Ecosystem
 		return false;
 	}
 
+	/**
+	 * Retrieves the default validation rule for templates.
+	 *
+	 * @param array $rule Additional rules to apply.
+	 * 
+	 * @return array The default rule configuration.
+	 * 
+	 */
 	public static function getDefaultTemplateRule(array $rule = []) : array{
 		return Template::defaultRuleConfig($rule);
 	}
 	
-	private function compliantTemplateArray(array $template, string|null $error_message = null, array $template_rule = [], array $compliant_message = []) {
-		// var_dump($template, Ecosystem::getDefaultTemplateRule($template_rule));exit;
+	/**
+	 * Checks the compliance of a template's properties according to the defined rules.
+	 *
+	 * @param array $template The properties of the template.
+	 * @param string|null|null $error_message The error message to display in case of non-compliance.
+	 * @param array $template_rule The validation rules.
+	 * @param array $compliant_message Custom error messages.
+	 * 
+	 * @return void
+	 * @throws TemplateValidationException If validation errors are found.
+	 * 
+	 */
+	private function compliantTemplateArray(array $template, string|null $error_message = null, array $template_rule = [], array $compliant_message = []) : void {
+
 		$compliant = Helper::compliantArray(
 			rules : Ecosystem::getDefaultTemplateRule($template_rule),
 			data : $template
 		);
+
 		if($compliant->check(message : $compliant_message)->errorExists()){
-			$m = $error_message ?? "Error Venant de la classe Ecosystem `" . static::class . "`, veuillez vérifier que les clés envoyé dans la méthode `template()` sont valides.";
-			Helper::dd($m . "\n\n". print_r($compliant->getErrors(), true));
-			throw new \Exception($m, 1);
+
+			throw new TemplateValidationException(
+				$compliant->getErrors(),
+				$error_message ?? "Error from the `" . static::class . "` ecosystem class, please check that the keys sent to the `template` method are valid or the configurations add in addition to `Crafteus::make`.",
+				code : 4305
+			);
+
 		}
 
 	}
+
+	/**
+	 * Retrieves a template by its name.
+	 *
+	 * @param string $template_name The name of the template.
+	 * 
+	 * @return string|array|bool The corresponding template, or false if not found.
+	 * 
+	 */
 	public function getTemplate(string $template_name) : string|array|bool {
 		$templates = $this->template();
 		return isset($templates[$template_name]) ? $templates[$template_name] : false;
 	}
 
+	/**
+	 * Obtain if you have to initialize the contents of the stub.
+	 *
+	 * @return bool
+	 * 
+	 */
 	public function initStubContent() : bool {
 		return $this->init_stub_content;
 	}
 
-	public function setFoundation(Foundation $foundation) : void {
+	/**
+	 * Sets the foundation associated with the ecosystem.
+	 *
+	 * @param Foundation $foundation The foundation instance.
+	 * 
+	 * @return Ecosystem The instance of the ecosystem.
+	 * 
+	 */
+	public function setFoundation(Foundation $foundation) : Ecosystem {
+
 		$this->foundation = $foundation;
+
+		return $this;
+
 	}
 
+	/**
+	 * Retrieves the foundation associated with the ecosystem.
+	 *
+	 * @return Foundation|null The foundation instance, or null if not set.
+	 * 
+	 */
 	public function getFoundation() : ?Foundation {
 		return $this->foundation;
 	}
 
+	/**
+	 * Generates the template or returns false if generation fails.
+	 *
+	 * @param Template|string|int $template The template to generate.
+	 * 
+	 * @return bool|array True if all the stubs are generated, or a table of all not generated with generated stub files.
+	 * 
+	 */
 	protected function generateTemplate(Template|string|int $template) : bool|array {
 		if((is_string($template) || is_int($template)) && is_subclass_of($st = $this->getTemplateInstance($template), Template::class))
 			$template = $st;
-
-		// if(is_null($template) && !is_null($template_name) && is_subclass_of($st = $this->getTemplateInstance($template_name), Template::class)){
-		// 	$template = $st;
-		// }
 
 		if(is_subclass_of($template, Template::class)){
 			// beforeGenerate
@@ -216,6 +369,12 @@ class Ecosystem
 		return false;
 	}
 
+	/**
+	 * Generates all templates within the ecosystem.
+	 *
+	 * @return array An array of generation results for each template.
+	 * 
+	 */
 	public function generateTemplates() : array {
 		$generated = [];
 		foreach ($this->templates_instance as $template_name => $template_instance) {
@@ -224,9 +383,26 @@ class Ecosystem
 		return $generated;
 	}
 
+	/**
+	 * Cancels the generation of stub files for all templates.
+	 *
+	 * @return void
+	 * 
+	 */
 	public function cancelTemplatesGenerated() : void {
 		foreach ($this->templates_instance as $template_name => $template_instance) {
 			$template_instance->cancelStubsFilesGenerated();
 		}
+	}
+
+	/**
+	 * If it returns true, while generating the files if an 
+	 * error occurs, even the generated files will be canceled.
+	 *
+	 * @return bool
+	 * 
+	 */
+	public function cancelAllOnError() : bool {
+		return $this->cancel_all_on_error;
 	}
 }
