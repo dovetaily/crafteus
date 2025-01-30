@@ -6,7 +6,7 @@ class FoundationAlreadyExistsException extends BaseException
 {
 	private string $foundationName;
 
-	public function __construct(string $foundationName, $code = 2000, \Throwable $previous = null)
+	public function __construct(string $foundationName, $code = 2000, \Throwable|null $previous = null)
 	{
 		$this->foundationName = $foundationName;
 		parent::__construct(
