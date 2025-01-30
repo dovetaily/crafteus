@@ -87,4 +87,49 @@ abstract class Helper
 		echo("\033[90m... {$file} on line {$line}\033[0m\n\n");
 		exit(1); // Arrête l'exécution
 	}
+
+	public static function redText(string $text, bool $disable_server_color = false) : string {
+		return self::baseColorText(
+			$text,
+			"\033[31m",
+			'red',
+			disable_server_color: $disable_server_color
+		);
+	}
+	public static function grayText(string $text, bool $disable_server_color = false) : string {
+		return self::baseColorText(
+			$text,
+			"\033[90m",
+			'red',
+			disable_server_color: $disable_server_color
+		);
+	}
+
+	public static function baseColorText(string $text, array|string $cli_color, string $cli_server_color, array $cli_target = ['cli'], array $cli_server_target = ['cli-server'], bool $disable_server_color = false) : string {
+
+		$sapi = php_sapi_name();
+
+		$cli_color = [
+			'start' => is_string($cli_color) 
+				? $cli_color
+				: (isset($cli_color['start'])
+					? $cli_color['start']
+					: ''
+				)
+			,
+			'end' => is_array($cli_color) && isset($cli_color['end']) && is_string($cli_color['end']) 
+				? $cli_color['end'] 
+				: "\033[0m"
+		];
+
+		return in_array($sapi, $cli_target)
+			? $cli_color['start'] . $text . $cli_color['end']
+			: (!$disable_server_color && in_array($sapi, $cli_server_target)
+				? "<span style=\"color:" . $cli_server_color . ";\">" . $text . "</span>"
+				: $text
+			)
+		;
+
+	}
+
 }
