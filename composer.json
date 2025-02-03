@@ -29,5 +29,8 @@
             "email": "gedeonbateko3@gmail.com",
             "role": "Developer"
         }
-    ]
+    ],
+    "require": {
+        "php": "^8.1" 
+    }
 }
