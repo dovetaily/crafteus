@@ -79,7 +79,7 @@ class Template
 	private function getBaseName(string|int|null $key = null, bool $last = false) : array|string {
 		$name = [$this->getFoundationName()];
 
-		if(method_exists($this, $m = 'getFileName')){
+		if(method_exists($this, $m = 'transformBasename')){
 			$response = $this->$m($key);
 			if(is_array($response) || is_string($response))
 				$name = is_string($response) ? [$response] : $response;
