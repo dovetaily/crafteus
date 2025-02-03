@@ -212,6 +212,16 @@ class Ecosystem
 	}
 	
 	/**
+	 * Retrieves all templates instance.
+	 *
+	 * @return array An array of templates instance.
+	 * 
+	 */
+	public function getTemplates() : array {
+		return $this->templates_instance;
+	}
+	
+	/**
 	 *  Cleans and validates the properties of a given template according to the defined configuration rules.
 	 * This method ensures that the template's properties comply with the expected structure and values.
 	 *

@@ -119,7 +119,7 @@ class App
 	public function generate() : array {
 
 		return array_map(
-			fn($foundation) => $foundation->generate(),
+			fn($foundation) => $foundation->generateEcosystem(),
 			$this->foundations
 		);
 
@@ -134,7 +134,7 @@ class App
 	public function cancelGenerated() : void {
 
 		array_map(
-			fn($foundation) => $foundation->cancelGenerated(), 
+			fn($foundation) => $foundation->cancelGeneratedEcosystem(), 
 			$this->foundations
 		);
 

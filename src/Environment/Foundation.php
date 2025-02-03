@@ -156,7 +156,7 @@ class Foundation
 	 * @return array List of generated templates.
 	 * 
 	 */
-	public function generate() : array {
+	public function generateEcosystem() : array {
 
 		return $this->getEcosystemInstance()->generateTemplates();
 
@@ -168,7 +168,7 @@ class Foundation
 	 * @return void
 	 * 
 	 */
-	public function cancelGenerated() : void {
+	public function cancelGeneratedEcosystem() : void {
 
 		$this->getEcosystemInstance()->cancelTemplatesGenerated();
 

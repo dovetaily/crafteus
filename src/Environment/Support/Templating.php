@@ -10,7 +10,7 @@ class Templating
 
 	private ?string $current_content;
 
-	public readonly ?Stub $stub;
+	private readonly ?Stub $stub;
 
 	protected ?array $holders = null;
 
