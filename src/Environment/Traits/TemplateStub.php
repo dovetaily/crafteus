@@ -34,14 +34,22 @@ trait TemplateStub {
 				$stub_file = $this->getStubFile($key);
 				$generate = $this->getGenerate($key);
 	
-				$name = $this->getBaseName($key);
+				$basename = $this->getBaseName($key);
 	
-				$file_name = $name . (empty($extension) ? '' : ('.' . $extension));
-				$file_path = $path . '/' . $file_name;
+				// $file_name = $name . (empty($extension) ? '' : ('.' . $extension));
+
+				// $file_path = $path . '/' . $file_name;
 				
 				$templating = $this->getTemplating($key);
 				
-				$stub = $this->addStub($stub_file, $file_path, $generate, $key);
+				$stub = $this->addStub(
+					stub_file : $stub_file,
+					directory: $path,
+					basename : $basename,
+					extension : $extension,
+					generate: $generate,
+					key : $key
+				);
 
 				
 				if (is_null($stub)) {
@@ -68,20 +76,31 @@ trait TemplateStub {
 	 * Adds a stub file to the template.
 	 *
 	 * @param string $stub_file The stub file (url or string structure) path.
-	 * @param string $file_path The target file path.
+	 * @param string $directory
+	 * @param string $basename
+	 * @param string $extension
 	 * @param bool $generate Whether the stub should be generated.
 	 * @param string|int|null $key Optional key for the stub.
 	 * 
 	 * @return Stub|null The created Stub object or null if it already exists.
 	 * 
 	 */
-	public function addStub(string $stub_file, string $file_path, bool $generate = true, string|int|null $key = null) : ?Stub {
+	public function addStub(
+		string $stub_file,
+		string $directory,
+		string $basename,
+		string $extension = '',
+		bool $generate = true,
+		string|int|null $key = null
+	) : ?Stub {
 		
 		if(is_null($key) || !isset($this->stubs[$key])){
 
 			$stub = new Stub(
-				stub : $stub_file,
-				file_path : $file_path,
+				stub : Helper::normalizePath($stub_file),
+				directory : Helper::normalizePath($directory),
+				basename : $basename,
+				extension : $extension,
 				template : $this,
 				generate : $generate,
 				key_id : is_null($key) ? count($this->stubs) : $key
@@ -187,7 +206,7 @@ trait TemplateStub {
 				$file_generated = $this->generateStubFile(stub : $stub, generate_stub_content : $generate_stub_content);
 			} catch (\Throwable $th) {
 				$file_generated = false;
-				echo $th;
+				// echo $th;
 			}
 			$result[$file_generated ? 'generated' : 'not_generated'][$key] = $stub;
 		}

@@ -34,7 +34,7 @@ class Stub extends SplFileInfo
 	 *
 	 * @var Template|null
 	 */
-	public Template|null $template = null;
+	private Template|null $template = null;
 
 	/**
 	 * The current content of the stub.
@@ -80,11 +80,25 @@ class Stub extends SplFileInfo
 	private string $file_path;
 
 	/**
+	 * File extension.
+	 *
+	 * @var string
+	 */
+	protected readonly string $extension;
+
+	/**
+	 * File basename.
+	 *
+	 * @var string
+	 */
+	protected readonly string $basename;
+
+	/**
 	 * Unique identifier for the stub.
 	 *
 	 * @var string
 	 */
-	public string $key_id;
+	public readonly string $key_id;
 
 	/**
 	 * The templating mechanism used.
@@ -118,15 +132,30 @@ class Stub extends SplFileInfo
 	 * Stub constructor.
 	 *
 	 * @param string $stub The stub source (file, URL, or content).
-	 * @param string $file_path The file path where the stub should be created.
 	 * @param Template|null $template The template associated with the stub.
+	 * @param string $directory The directory path.
+	 * @param string $basename Base name of file.
+	 * @param string|null $extension File extension.
 	 * @param bool $generate Whether the stub should be generated.
 	 * @param string|int|null|null $key_id Unique identifier for the stub.
 	 * 
 	 */
-	public function __construct(string $stub, string $file_path, ?Template $template, bool $generate = true, string|int|null $key_id = null) {
+	public function __construct(
+		string $stub,
+		?Template $template,
+		string $directory,
+		string $basename,
+		string|null $extension = '',
+		bool $generate = true,
+		string|int|null $key_id = null
+	) {
+		$file_path = Helper::normalizePath($directory . '/'  . $basename . (!empty($extension) ? '.' . $extension : ''));
 
 		parent::__construct($file_path);
+
+		$this->basename = $basename;
+		
+		$this->extension = $extension;
 
 		$this->state_generate = $generate;
 
@@ -286,7 +315,7 @@ class Stub extends SplFileInfo
 	 * @return Stub
 	 * 
 	 */
-	public function setCurrentContent(?string $content = null) : Stub {
+	public function setCurrentContent(string|null $content = null) : Stub {
 		$this->current_content = $content;
 		return $this;
 	}
@@ -538,7 +567,7 @@ class Stub extends SplFileInfo
 			try {
 				if(!$this->isFile())
 					$this->generateFile(is_generated:false);
-				$this->generateContentFile($this->getOldContent());
+				$this->cancelGenerateContent();
 			} catch (\Error $th) {
 				return false;
 			}
@@ -551,6 +580,16 @@ class Stub extends SplFileInfo
 			}
 		}
 		return true;
+	}
+
+	/**
+	 * Cancels the content generate in file.
+	 *
+	 * @return bool
+	 * 
+	 */
+	public function cancelGenerateContent() : bool {
+		return $this->generateContentFile($this->getOldContent());
 	}
 
 	/**
@@ -596,6 +635,44 @@ class Stub extends SplFileInfo
 	 */
 	public function setOldContent(string $content) : void {
 		$this->old_content = $content;
+	}
+
+	/**
+	 * Get the relative directory path.
+	 *
+	 * @return string The relative directory path.
+	 */
+	public function getRelativePath() : string {
+		return Helper::relativePath($this->getPath());
+	}
+
+	/**
+	 * Get the relative file path.
+	 *
+	 * @return string The relative file path.
+	 */
+	public function getRelativeFilePath() : string {
+		return Helper::relativePath($this->getFilePath());
+	}
+
+	/**
+	 * Get file extension.
+	 *
+	 * @return string
+	 * 
+	 */
+	public function getExtension() : string {
+		return $this->extension;
+	}
+
+	/**
+	 * Gets the base name of the file
+	 *
+	 * @return string The base name without path information.
+	 * 
+	 */
+	public function getBasename(string $suffix = "") : string {
+		return $this->basename . $suffix;
 	}
 
 }
