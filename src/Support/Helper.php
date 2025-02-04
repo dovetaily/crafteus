@@ -1,6 +1,7 @@
 <?php
 namespace Crafteus\Support;
 
+use Crafteus\Crafteus;
 use Crafteus\Support\CompliantArray;
 
 abstract class Helper
@@ -130,6 +131,61 @@ abstract class Helper
 			)
 		;
 
+	}
+
+	/**
+	 * Normalize path.
+	 *
+	 * @param string $path
+	 * 
+	 * @return string
+	 * 
+	 */
+	public static function normalizePath(string $path) : string {
+		return self::checkOS('windows')
+			? str_replace('/', '\\', $path)
+			: str_replace('\\', '/', $path)
+		;
+	}
+	
+	/**
+	 * Get relative path.
+	 *
+	 * @param string $path
+	 * 
+	 * @return string
+	 * 
+	 */
+	public static function relativePath(string $path) : string {
+
+		$path = self::normalizePath($path);
+
+		$dir = Crafteus::$relative_path_with == 'vendor'
+			? dirname(__DIR__, 5)
+			: (Crafteus::$relative_path_with == 'getcwd'
+				? getcwd()
+				: Crafteus::$relative_path_with
+			)
+		;
+
+		return preg_replace(
+			'/' . str_replace('/', '\\/', preg_quote($dir)) . '[\/\\\](.*)$/',
+			'$1', 
+			$path
+		);
+
+	}
+
+	/**
+	 * Check if the bone corresponds to that of the system.
+	 *
+	 * @param string $os
+	 * 
+	 * @return bool
+	 * 
+	 */
+	public static function checkOS(string $os) : bool {
+		return stripos(strtolower(PHP_OS_FAMILY), strtolower($os)) !== false;
 	}
 
 }

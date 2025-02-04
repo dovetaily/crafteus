@@ -49,7 +49,7 @@ class AnonymousTemplate extends Template
 	 * @return array|string The determined file(s) name.
 	 * 
 	 */
-	public function getFileName(string|int|null $key_path = null) : array|string {
+	public function transformBasename(string|int|null $key_path = null) : array|string {
 
 		$foundation_name = $this->getFoundationName();
 
