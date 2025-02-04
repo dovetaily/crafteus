@@ -1,5 +1,7 @@
 # Crafteus
 
+Crafteus is an advanced tool for generating stub files from custom 'Ecosystems'. Designers can create Ecosystems composed of multiple dynamic Templates, defining specific configurations and transformation logic. Users can leverage these Ecosystems to provide data, which will be processed by the designers' configurations and transformed into tailored stub files.
+
 ## How to Install
 
 You can install **Crafteus** via Composer by running the following command:
