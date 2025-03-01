@@ -110,7 +110,7 @@ class Foundation
 
 			$template_instance = $ecosystem_instance->getTemplateInstance(
 				$template_name,
-				$this->templates_config[$template_name] ?? []
+				array_merge($this->templates_config['*'] ?? [], $this->templates_config[$template_name] ?? [])
 			);
 
 			if($template_instance === false)
