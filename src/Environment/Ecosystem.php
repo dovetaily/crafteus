@@ -61,6 +61,13 @@ class Ecosystem
 	public bool $cancel_all_on_error = false;
 
 	/**
+	 * Current ecosystem data.
+	 *
+	 * @var array|null
+	 */
+	protected ?array $current_data = null;
+
+	/**
 	 * Abstract method that must be implemented in subclasses to provide templates.
 	 *
 	 * @return array An array of templates.
@@ -414,5 +421,50 @@ class Ecosystem
 	 */
 	public function cancelAllOnError() : bool {
 		return $this->cancel_all_on_error;
+	}
+
+	/**
+	 * Retrieves the ecosystem current data.
+	 *
+	 * @throws InvalidTemplateDataException If the data does not comply with the rules.
+	 * @return array Validated template data.
+	 * 
+	 */
+	public function getData() : array {
+
+		if(is_null($this->current_data))
+			$this->initData();
+
+		return $this->current_data;
+
+	}
+
+	/**
+	 * Initializes the ecosystem current data from the ecosystem's foundation.
+	 *
+	 * @param bool $force Forces the initialization of the data if it is true.
+	 *
+	 * @return void
+	 * 
+	 */
+	protected function initData(bool $force = false) : void {
+
+		if(is_null($this->current_data) || $force)
+			$this->setCurrentData($this->getFoundation()->getData());
+
+	}
+	
+	/**
+	 * Set the ecosystem data
+	 *
+	 * @param array $data
+	 * 
+	 * @return void
+	 * 
+	 */
+	protected function setCurrentData(array $data) : void {
+
+		$this->current_data = $data;
+
 	}
 }

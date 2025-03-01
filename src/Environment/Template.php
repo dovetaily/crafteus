@@ -143,7 +143,7 @@ class Template
 
 		if(is_null($this->current_data) || $force){
 
-			$data = [...$this->getEcosystem()->getFoundation()->getData()];
+			$data = [...$this->getEcosystem()->getData()];
 
 			if(isset($data['__template'])){
 
