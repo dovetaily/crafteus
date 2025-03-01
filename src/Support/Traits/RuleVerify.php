@@ -24,7 +24,13 @@ trait RuleVerify{
 								preg_match('/^array<([^\\>\\<]+)>$/i', $verify, $m);
 								$types = explode(',', end($m));
 								foreach ($data as $value) {
-									if(!in_array((!is_string($data) && is_callable($data) && gettype($data) == 'object') ? 'function' : gettype($value), $types)){
+									if(!in_array(
+										(!is_string($value) && is_callable($value) && gettype($value) == 'object')
+											? 'function'
+											: gettype($value)
+										,
+										$types
+									)){
 									// if(!in_array(gettype($value), $types)){
 										$check = 'The key `:name` values has not only types : '. implode(',', $types);
 										break;
