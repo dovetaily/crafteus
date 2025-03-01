@@ -9,6 +9,7 @@ use Crafteus\Exceptions\FileDeletionException;
 use Crafteus\Exceptions\FileGenerationException;
 use Crafteus\Exceptions\FileNotReadableException;
 use Crafteus\Exceptions\PermissionDeniedException;
+use Crafteus\Exceptions\PhpStubException;
 use SplFileInfo;
 use Crafteus\Support\Helper;
 
@@ -510,13 +511,23 @@ class Stub extends SplFileInfo
 	 * @return void
 	 * 
 	 */
-	public function phpStub() : void {
-		$c = (function($data, $stub){
-			ob_start();
-			include $stub->getOriginStub();
-			return ob_get_clean();
-		})($this->getData());
-		// Helper::dd($c);
+	public function phpStub() : void
+	{
+		try {
+			$c = (function($data, $stub){
+				ob_start();
+				include $stub->getOriginStub();
+				return ob_get_clean();
+			})($this->getData(), $this);
+	
+			$this->setCurrentContent($c)->generateContentFile();
+		} catch (\Throwable $th) {
+			$this->addErrors(new PhpStubException(
+				$this->getOriginStub(),
+				code : 5503,
+				previous: $th
+			));
+		}
 	}
 
 	/**
@@ -542,6 +553,8 @@ class Stub extends SplFileInfo
 		);
 
 		unlink($path);
+
+		restore_error_handler();
 
 	}
 
