@@ -30,7 +30,7 @@ class Template
 	 *
 	 * @var array|null
 	 */
-	private ?array $current_data = null;
+	protected ?array $current_data = null;
 
 	/**
 	 * Path where the file will be generated.
@@ -125,7 +125,7 @@ class Template
 		);
 
 		if($compliant->check()->errorExists())
-			throw new InvalidTemplateDataException(code : 4402);
+			throw new InvalidTemplateDataException(validation_errors: $compliant->getErrors(), code : 4402);
 
 		return $this->current_data;
 
@@ -162,9 +162,23 @@ class Template
 
 			}
 
-			$this->current_data = $data;
+			$this->setCurrentData($data);
 
 		}
+
+	}
+	
+	/**
+	 * Set the template's data
+	 *
+	 * @param array $data
+	 * 
+	 * @return void
+	 * 
+	 */
+	protected function setCurrentData(array $data) : void {
+
+		$this->current_data = $data;
 
 	}
 	
