@@ -116,8 +116,22 @@ class Template
 	 */
 	public function getData() : array {
 
-		if(is_null($this->current_data))
-			$this->initData();
+		$this->compliantData();
+
+		return $this->current_data;
+
+	}
+
+	/**
+	 * Check the compliance of the template data.
+	 *
+	 * @throws InvalidTemplateDataException If the data does not comply with the rules.
+	 * @return void
+	 * 
+	 */
+	public function compliantData() : void {
+
+		$this->initData();
 
 		$compliant = Helper::compliantArray(
 			rules : $this->getDataRule(),
@@ -126,9 +140,7 @@ class Template
 
 		if($compliant->check()->errorExists())
 			throw new InvalidTemplateDataException(validation_errors: $compliant->getErrors(), code : 4402);
-
-		return $this->current_data;
-
+		
 	}
 
 	/**
