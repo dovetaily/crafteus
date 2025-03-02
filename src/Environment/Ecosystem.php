@@ -192,8 +192,8 @@ class Ecosystem
 						->setEcosystem($this)
 						->setTemplateName($template_name)
 					;
-					if(isset($template['getFileName']) && is_callable($template['getFileName']))
-						$ins->setGetFileName($template['getFileName']);
+					if(isset($template['transformBasename']) && is_callable($template['transformBasename']))
+						$ins->setGetFileName($template['transformBasename']);
 
 				}
 				else throw new InvalidTemplateTypeException(
