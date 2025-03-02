@@ -2,6 +2,7 @@
 
 namespace Crafteus\Environment;
 
+use Crafteus\Crafteus;
 use Crafteus\Environment\Support\Templating;
 use Crafteus\Exceptions\BaseErrorException;
 use Crafteus\Exceptions\DirectoryCreationException;
@@ -128,6 +129,16 @@ class Stub extends SplFileInfo
 	 * @var array<string>
 	 */
 	protected array $keywords = [];
+
+	/**
+	 * Stores content that cannot be written to a file due to write restrictions.
+	 * 
+	 * When file writing is disabled, new content is stored in this property 
+	 * until writing is allowed again.
+	 * 
+	 * @var string|null $deferred_content The deferred content awaiting file write.
+	 */
+	public $deferred_content;
 
 	/**
 	 * Stub constructor.
@@ -317,6 +328,7 @@ class Stub extends SplFileInfo
 	 * 
 	 */
 	public function setCurrentContent(string|null $content = null) : Stub {
+		if(Crafteus::$disable_file_writes) $this->deferred_content = $content;
 		$this->current_content = $content;
 		return $this;
 	}
@@ -328,7 +340,7 @@ class Stub extends SplFileInfo
 	 * 
 	 */
 	public function getCurrentContent() : ?string {
-		return $this->current_content;
+		return Crafteus::$disable_file_writes ? $this->deferred_content : $this->current_content;
 	}
 
 	/**
@@ -431,7 +443,10 @@ class Stub extends SplFileInfo
 	 */
 	public function generateContentFile(?string $content = null) : bool {
 		if($this->isWritable()){
-			file_put_contents($this->getFilePath(), $content ?? $this->getCurrentContent());
+			if(Crafteus::$disable_file_writes)
+				$this->deferred_content = $content ?? $this->getCurrentContent();
+			else
+				file_put_contents($this->getFilePath(), $content ?? $this->getCurrentContent());
 			return true;
 		}
 		return false;
@@ -488,10 +503,17 @@ class Stub extends SplFileInfo
 				E_WARNING
 			);
 
-			if($this->getOriginType() === 'file')
-				copy($this->getOriginStub(), $this->getFilePath());
-			else
-				file_put_contents($this->getFilePath(), $this->getStubContent());
+			if($this->getOriginType() === 'file'){
+				if(Crafteus::$disable_file_writes)
+					$this->deferred_content = file_get_contents($this->getOriginStub());
+				else copy($this->getOriginStub(), $this->getFilePath());
+			}
+			else{
+
+				if(Crafteus::$disable_file_writes)
+					$this->deferred_content = $this->getStubContent();
+				else file_put_contents($this->getFilePath(), $this->getStubContent());
+			}
 
 			restore_error_handler();
 
