@@ -188,4 +188,134 @@ abstract class Helper
 		return stripos(strtolower(PHP_OS_FAMILY), strtolower($os)) !== false;
 	}
 
+	/**
+	 * Filters and merges values from an associative array based on a key pattern.
+	 *
+	 * This function scans the given `$data` array and collects values from keys that  
+	 * contain both $separator(`,`) and the specified `$base_key`. The collected values are merged  
+	 * into a single array.
+	 *
+	 * @param string $base_key The base key to search for within array keys.
+	 * @param array $data The associative array containing key-value pairs.
+	 * @param string $separator
+	 * @return array The merged array of values from matching keys.
+	 */
+	public static function filterAndMergeByKey(string $base_key, array $data, string $separator = ',') : array{
+		$result = [];
+		foreach (array_keys($data) as $key) {
+			if(str_contains($key, $separator) && str_contains($key, $base_key))
+				$result = array_merge($result, $data[$key]);
+		}
+		return $result;
+	}
+
+	/**
+	 * Parses a formatted string into an associative array with optional key and value conversions.
+	 *
+	 * This function converts a string like:
+	 * 'only|required:true|unique:true|mess:"he\|l\:lo"|sec:\'l|o:wa\'|max:255'
+	 * into an associative array:
+	 * [
+	 *     'only' => true,
+	 *     'required' => true,
+	 *     'unique' => true,
+	 *     'mess' => 'he|l:lo',
+	 *     'sec' => 'l|o:wa',
+	 *     'max' => 255
+	 * ]
+	 *
+	 * Optionally, it can convert both keys and values using custom callables provided as `$convert_key` and `$convert_value`.
+	 *
+	 * @param string $str The formatted string containing key-value pairs separated by `|` and `:`.
+	 * @param mixed $default The default value to assign to keys with no value (e.g., `true`, `null`).
+	 * @param array $defaultsForKeys An associative array of default values for specific keys.
+	 * @param callable|bool $convert_value A callable for custom value conversion or `true` to automatically convert values (e.g., `true`, `false`, numbers). Defaults to `false` (no conversion).
+	 * @param callable|null $change_key A callable for custom key (optional).
+	 *
+	 * @return array An associative array with the extracted data from the string.
+	 */
+	public static function parseCustomString($str, $default = null, array $defaultsForKeys = [], callable|bool $convert_value = false, callable|null $change_key = null) {
+		// Pattern to match the keys and values
+		$pattern = '/(\w+)(?:\s*:\s*(?:(?:"((?:[^"\\\\]|\\\\.)*)"|\'((?:[^\'\\\\]|\\\\.)*)\')|([^|]+)))?/';
+		preg_match_all($pattern, $str, $matches, PREG_SET_ORDER);
+
+		$result = [];
+		foreach ($matches as $match) {
+			$key = $match[1];
+
+			if (!is_null($change_key)) {
+				$key = $change_key($key);
+			}
+
+			$value = $defaultsForKeys[$key] ?? $default;
+
+			if (isset($match[2]) && $match[2] !== '') { // Double quotes
+				$value = stripcslashes($match[2]);
+			} elseif (isset($match[3]) && $match[3] !== '') { // Single quotes
+				$value = stripcslashes($match[3]);
+			} elseif (isset($match[4]) && $match[4] !== '') { // Unquoted value
+				$auto_convert = $match[4] === "true" ? true : ($match[4] === "false" ? false : (is_numeric($match[4]) ? (int)$match[4] : $match[4]));
+				$value = $convert_value === true
+					? $auto_convert
+					: (is_callable($convert_value)
+						? $convert_value($auto_convert, $match[4], $result, $key)
+						: $match[4]
+					);
+			}
+
+			$result[$key] = $value;
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Ensures that unset keys in the array are filled with a default value (or null).
+	 * 
+	 * This function replaces elements in an array where the key is a numeric index (and the value is not numeric)
+	 * by associating them with a default value. If the `ignore` parameter is set to `true`, numeric keys are ignored.
+	 *
+	 * @param array $tab The input array to process.
+	 * @param bool $ignore If `true`, numeric keys will be ignored and not processed.
+	 * @param mixed $default The default value to use for unset keys. The default is `null`.
+	 * @param callable|null $ensure_value
+	 * 
+	 * @return array The transformed array with default values for unset keys or numeric indices.
+	 */
+	public static function ensureNullForUnsetKeys(array $tab, bool $ignore = false, $default = null, callable|null $ensure_value = null) : array {
+		$result = [];
+		foreach ($tab as $key => $value){
+			$k = null;
+			if(is_int($key) && is_string($value) && !is_numeric($value)){
+				$result[$value] = is_callable($default) ? $default(...[$tab, $key, $value]) : $default;
+				$k = $value;
+			}
+			elseif(!is_numeric($key) || (is_int($key) && !$ignore)){
+				$result[$key] = $value;
+				$k = $key;
+			}
+
+			if(!is_null($k) && !is_null($ensure_value)){
+				$result[$k] = $ensure_value(...[$tab, $k, $result[$k], $key, $value]);
+			}
+		}
+		return $result;
+	}
+
+	public static function base_path(string $path) : string {
+
+		$dir = Crafteus::$relative_path_with == 'vendor'
+			? dirname(__DIR__, 5)
+			: (Crafteus::$relative_path_with == 'getcwd'
+				? getcwd()
+				: Crafteus::$relative_path_with
+			)
+		;
+
+		$dir = dirname(__DIR__);
+
+		return self::normalizePath($dir . '/' . $path);
+
+	}
+
 }
