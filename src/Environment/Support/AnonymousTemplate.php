@@ -12,7 +12,7 @@ class AnonymousTemplate extends Template
 	 *
 	 * @var \Closure|null
 	 */
-	private \Closure|null $get_file_name = null;
+	private \Closure|null $transform_basename = null;
 
 	/**
 	 * Constructs an AnonymousTemplate instance.
@@ -53,9 +53,9 @@ class AnonymousTemplate extends Template
 
 		$foundation_name = $this->getFoundationName();
 
-		return is_null($this->get_file_name) 
+		return is_null($this->transform_basename) 
 			? [$foundation_name]
-			: ($this->get_file_name)($key_path, $this)
+			: ($this->transform_basename)($key_path, $this)
 		;
 
 	}
@@ -68,9 +68,9 @@ class AnonymousTemplate extends Template
 	 * @return void
 	 * 
 	 */
-	public function setGetFileName(\Closure|null $closure) : void {
+	public function setTransformBasename(\Closure|null $closure) : void {
 
-		$this->get_file_name = $closure;
+		$this->transform_basename = $closure;
 
 	}
 
