@@ -2,6 +2,7 @@
 
 namespace Crafteus\Environment;
 
+use Crafteus\Crafteus;
 use Crafteus\Environment\Template;
 use Crafteus\Environment\Support\AnonymousTemplate;
 use Crafteus\Exceptions\DuplicateTemplateInstanceException;
@@ -466,5 +467,16 @@ class Ecosystem
 
 		$this->current_data = $data;
 
+	}
+
+	/**
+	 * Creates and registers multiple foundations.
+	 * 
+	 * @param array $data An array of foundation data. Each entry should have the foundation name as the key, and the associated data as the value.
+	 * @param array $templates_config Additional configuration for templates. Optional.
+	 * @return \App\Crafteus\Environment\App Returns the current instance for method chaining.
+	 */
+	public static function make(array $data, array $templates_config = []) : App{
+		return Crafteus::make(static::class, $data, $templates_config);
 	}
 }
