@@ -228,13 +228,14 @@ abstract class Helper
 	 *
 	 * @param string $str The formatted string containing key-value pairs separated by `|` and `:`.
 	 * @param mixed $default The default value to assign to keys with no value (e.g., `true`, `null`).
-	 * @param array $defaultsForKeys An associative array of default values for specific keys.
+	 * @param array $defaults_for_keys An associative array of default values for specific keys.
 	 * @param callable|bool $convert_value A callable for custom value conversion or `true` to automatically convert values (e.g., `true`, `false`, numbers). Defaults to `false` (no conversion).
 	 * @param callable|null $change_key A callable for custom key (optional).
+	 * @param array $convert_keys_value
 	 *
 	 * @return array An associative array with the extracted data from the string.
 	 */
-	public static function parseCustomString($str, $default = null, array $defaultsForKeys = [], callable|bool $convert_value = false, callable|null $change_key = null) {
+	public static function parseCustomString($str, $default = null, array $defaults_for_keys = [], callable|bool $convert_value = false, callable|null $change_key = null, array $convert_keys_value = []) {
 		// Pattern to match the keys and values
 		$pattern = '/(\w+)(?:\s*:\s*(?:(?:"((?:[^"\\\\]|\\\\.)*)"|\'((?:[^\'\\\\]|\\\\.)*)\')|([^|]+)))?/';
 		preg_match_all($pattern, $str, $matches, PREG_SET_ORDER);
@@ -247,7 +248,7 @@ abstract class Helper
 				$key = $change_key($key);
 			}
 
-			$value = $defaultsForKeys[$key] ?? $default;
+			$value = $defaults_for_keys[$key] ?? $default;
 
 			if (isset($match[2]) && $match[2] !== '') { // Double quotes
 				$value = stripcslashes($match[2]);
@@ -255,10 +256,10 @@ abstract class Helper
 				$value = stripcslashes($match[3]);
 			} elseif (isset($match[4]) && $match[4] !== '') { // Unquoted value
 				$auto_convert = $match[4] === "true" ? true : ($match[4] === "false" ? false : (is_numeric($match[4]) ? (int)$match[4] : $match[4]));
-				$value = $convert_value === true
+				$value = $convert_value === true || in_array($key, $convert_keys_value)
 					? $auto_convert
 					: (is_callable($convert_value)
-						? $convert_value($auto_convert, $match[4], $result, $key)
+						? $convert_value(...[$auto_convert, $match[4], $key, $result])
 						: $match[4]
 					);
 			}
@@ -312,10 +313,42 @@ abstract class Helper
 			)
 		;
 
-		$dir = dirname(__DIR__);
-
 		return self::normalizePath($dir . '/' . $path);
 
+	}
+
+	/**
+	 * Retrieves a value from a multidimensional array using a key path.
+	 *
+	 * @param string $key The key path, using a separator to navigate nested levels.
+	 * @param array $data The array to search within.
+	 * @param mixed $default_value The default value to return if the key is not found.
+	 * @param string $separator The character used to separate key levels (default is '.').
+	 * @param bool $result_only
+	 *
+	 * @return mixed Returns an associative array (if $result_only is false) with:
+	 *               - 'result': The found value or the default value.
+	 *               - 'found': A boolean indicating whether the key was found.
+	 */
+	public static function getNestedArrayValue(string $key, array $data, $default_value = null, string $separator = '.', bool $result_only = false) {
+		$result = $default_value;
+		$found = false;
+		if(!empty($data) && (!empty($key) || is_numeric($key))){
+			if(array_key_exists($key, $data)){
+				$result = $data[$key];
+				$found = true;
+			}
+			elseif(str_contains($key, $separator)){
+				preg_match('/^([^' . preg_quote($separator) . ']+)' . preg_quote($separator) . '(.*)$/', $key, $matches);
+				if(!is_null($kk = $matches[1] ?? null)){
+					if(array_key_exists($kk, $data) && is_array($data[$kk])){
+						$ret = self::getNestedArrayValue($matches[2], $data[$kk], $default_value, $separator);
+						['result' => $result, 'found' => $found] = $ret;
+					}
+				}
+			}
+		}
+		return $result_only ? $result : ['result' => $result, 'found' => $found];
 	}
 
 }
