@@ -84,8 +84,8 @@ class CompliantArray
 
 					$compliant = (new CompliantArray(
 						rules : $more_keys_compliant,
-						data : $data ?? []
-					))->check($key_error . '.' . $key_);
+						data : is_array($data) ? $data : []
+					))->check($key_error . '.' . (is_string($data) ? $data . '[is not array]' : $key_));
 
 					$this->setErrors(array_merge($this->errors, $compliant->errors));
 
