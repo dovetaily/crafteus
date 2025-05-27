@@ -22,9 +22,9 @@ class Crafteus
 	 * When set to `true`, the class prevents any file creation 
 	 * or modification in the system.
 	 * 
-	 * @var bool $disable_file_writes
+	 * @var bool $disable_file_writing
 	 */
-	public static bool $disable_file_writes = false;
+	public static bool $disable_file_writing = false;
 
 	/**
 	 * Used to deduce the relative path of the files.
@@ -43,4 +43,29 @@ class Crafteus
 		// else throw new \Error("Call to undefined method Crafteus\Environment\App::" . $method . "()", 1);
 		
 	}
+
+	/**
+	 * Disables file writing and creation.
+	 *
+	 * Sets the `$disable_file_writing` property to `true`, preventing 
+	 * any file creation or modification within the system.
+	 *
+	 * @return void
+	 */
+	public static function disableFileWriting() : void {
+		self::$disable_file_writing = true;
+	}
+
+	/**
+	 * Enables file writing and creation.
+	 *
+	 * Sets the `$disable_file_writing` property to `false`, allowing 
+	 * file creation and modification within the system.
+	 *
+	 * @return void
+	 */
+	public static function enableFileWriting() : void {
+		self::$disable_file_writing = false;
+	}
+
 }
