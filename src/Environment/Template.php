@@ -7,6 +7,10 @@ use Crafteus\Environment\Traits\TemplateStub;
 use Crafteus\Exceptions\InvalidTemplateDataException;
 use Crafteus\Support\Helper;
 
+
+/**
+ * @method string|array transformBaseName(string|int $key_path) Retrieves the file name for the template.
+ */
 class Template
 {
 	use TemplateRule, TemplateStub;
@@ -68,6 +72,22 @@ class Template
 	public string|array|\Closure $templating = [];
 
 	/**
+	 * List of default public properties that should return a single value for the Stub 
+	 * if their values are arrays, based on the Stub's key ID.
+	 *
+	 * @var array
+	 */
+	public const UNIQUE_STUB_CONFIG_PROPERTIES = ['path', 'extension', 'stub_file', 'generate', 'templating'];
+
+	/**
+	 * List of public properties that should return a single value for the Stub
+	 * if their values are arrays, based on the Stub's key ID.
+	 *
+	 * @var array
+	 */
+	protected array $unique_stub_config_properties = [];
+
+	/**
 	 * Retrieves the base name of the template file.
 	 *
 	 * @param string|int|null $key Optional key to retrieve a specific name.
@@ -110,15 +130,18 @@ class Template
 	/**
 	 * Retrieves the template's data.
 	 *
+	 * @param string|null $key
+	 * @param mixed $default_value
+	 * ec
 	 * @throws InvalidTemplateDataException If the data does not comply with the rules.
-	 * @return array Validated template data.
+	 * @return mixed Validated template data.
 	 * 
 	 */
-	public function getData() : array {
+	public function getData(string|null $key = null, $default_value = null) {
 
 		$this->compliantData();
 
-		return $this->current_data;
+		return is_null($key) ? $this->current_data : Helper::getNestedArrayValue($key, $this->current_data, $default_value)['result'];
 
 	}
 
@@ -161,8 +184,12 @@ class Template
 
 				$template_data = [];
 
-				if(is_array($data['__template']) && isset($data['__template'][$this->getTemplateName()])){
-					$template_data =  $data['__template'][$this->getTemplateName()];
+				if(is_array($data['__template'])){
+					$template_data =  array_merge(
+						$data['__template']['*'] ?? [],
+						Helper::filterAndMergeByKey($this->getTemplateName(), $data['__template']),
+						$data['__template'][$this->getTemplateName()] ?? []
+					);
 				}
 
 				unset($data['__template']);
@@ -193,14 +220,14 @@ class Template
 		$this->current_data = $data;
 
 	}
-	
+
 	/**
 	 * Retrieves the ecosystem instance.
 	 *
 	 * @return Ecosystem|null Ecosystem instance.
 	 * 
 	 */
-	protected function getEcosystem() : ?Ecosystem {
+	public function getEcosystem() : ?Ecosystem {
 		return $this->ecosystem;
 	}
 
@@ -272,17 +299,7 @@ class Template
 	 * 
 	 */
 	protected function getExtension(string|int|null $key = null, bool $last = false) : array|string {
-		$extension = !is_array($this->extension) ? [$this->extension] : $this->extension;
-		return !is_null($key)
-			? (array_key_exists($key, $extension)
-				? $extension[$key]
-				: ($last
-					? end($extension)
-					: current($extension)
-				)
-			)
-			: $extension
-		;
+		return self::getUniqueConfig($this->extension, $key, $last);
 	}
 
 	/**
@@ -295,17 +312,7 @@ class Template
 	 * 
 	 */
 	protected function getStubFile(string|int|null $key = null, bool $last = false) : array|string {
-		$stub_file = !is_array($this->stub_file) ? [$this->stub_file] : $this->stub_file;
-		return !is_null($key)
-			? (array_key_exists($key, $stub_file)
-				? $stub_file[$key]
-				: ($last
-					? end($stub_file)
-					: current($stub_file)
-				)
-			)
-			: $stub_file
-		;
+		return self::getUniqueConfig($this->stub_file, $key, $last);
 	}
 
 	/**
@@ -318,17 +325,7 @@ class Template
 	 * 
 	 */
 	protected function getGenerate(string|int|null $key = null, bool $last = false) : array|bool {
-		$generate = !is_array($this->generate) ? [$this->generate] : $this->generate;
-		return !is_null($key)
-			? (array_key_exists($key, $generate)
-				? $generate[$key]
-				: ($last
-					? end($generate)
-					: current($generate)
-				)
-			)
-			: $generate
-		;
+		return self::getUniqueConfig($this->generate, $key, $last);
 	}
 
 	/**
@@ -341,18 +338,74 @@ class Template
 	 * 
 	 */
 	protected function getTemplating(string|int|null $key = null, bool $last = false) : array|string|\Closure {
-		$templating = !is_array($this->templating) ? [$this->templating] : $this->templating;
+		return self::getUniqueConfig($this->templating, $key, $last);
+	}
+
+	/**
+	 * Retrieves a unique configuration value from an array or a single value.
+	 *
+	 * If the provided data is not an array, it wraps it in an array. It then retrieves
+	 * a specific element by its key, or returns the first or last element based on the `last` flag.
+	 *
+	 * @param mixed $data The data to retrieve the configuration from. Can be an array or a single value.
+	 * @param string|int|null $key Optional key to retrieve a specific value from the array.
+	 * @param bool $last Whether to return the last element if the key is not found. Defaults to false.
+	 *
+	 * @return mixed The requested configuration value, either from the key or first/last element.
+	 */
+	public static function getUniqueConfig($data, string|int|null $key = null, bool $last = false) : mixed {
+		$result = !is_array($data) ? [$data] : $data;
 		return !is_null($key)
-			? (array_key_exists($key, $templating)
-				? $templating[$key]
+			? (array_key_exists($key, $result)
+				? $result[$key]
 				: ($last
-					? end($templating)
-					: current($templating)
+					? end($result)
+					: current($result)
 				)
 			)
-			: $templating
+			: $result
 		;
 	}
 
+	/**
+	 * Retrieves the configuration of the Template from its public properties.
+	 *
+	 * @param string|null $key
+	 * @param mixed $default_value
+	 * 
+	 * @return mixed The template's configuration.
+	 * 
+	 */
+	public function getConfig(string|null $key = null, $default_value = null) {
+		if(!function_exists('crafteus\\environment\\dug8e2e8h_template_substitute')){
+			function dug8e2e8h_template_substitute($o){ return get_object_vars($o); }
+		}
+
+		$result = dug8e2e8h_template_substitute($this);
+
+		return is_null($key) ? $result : Helper::getNestedArrayValue($key, $result, $default_value)['result'];
+	}
+
+	/**
+	 * Retrieves public properties that should return a single value for the Stub.
+	 *
+	 * @return array
+	 * 
+	 */
+	public function getUniqueStubConfigProperties() : array {
+		return $this->unique_stub_config_properties;
+	}
+
+	/**
+	 * Set public properties that should return a single value for the Stub.
+	 *
+	 * @param $data
+	 * 
+	 * @return void
+	 * 
+	 */
+	public function setUniqueStubConfigProperties(array $data) : void {
+		$this->unique_stub_config_properties = $data;
+	}
 
 }
