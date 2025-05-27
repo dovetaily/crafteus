@@ -45,7 +45,7 @@ class Ecosystem
 	 *
 	 * @var bool
 	 */
-	protected bool $init_stub_content = false;
+	protected bool $initialize_stub_content_with_template = false;
 
 	/**
 	 * Indicates whether existing files should be replaced.
@@ -139,6 +139,8 @@ class Ecosystem
 								}
 							}
 						}
+						if(method_exists($ins, 'afterConfigUpdated'))
+							$ins->afterConfigUpdated(...[$origin_config]); // old_config
 						// update config stop...
 
 						$this->compliantTemplateArray(
@@ -170,6 +172,14 @@ class Ecosystem
 					foreach ($more_config as $key => $value)
 						if(array_key_exists($key, $origin_config) && $origin_config[$key] !== $value)
 							$template['config'][$key] = $value;
+					
+					if(isset($template['afterConfigUpdated']) && is_callable($template['afterConfigUpdated'])){
+						$template['afterConfigUpdated'](...[
+							$template['config'], // &$new_config
+							$origin_config,  // $old_config
+							$template
+						]);
+					}
 					// update config stop ...
 
 					$this->compliantTemplateArray(
@@ -193,8 +203,8 @@ class Ecosystem
 						->setEcosystem($this)
 						->setTemplateName($template_name)
 					;
-					if(isset($template['transformBasename']) && is_callable($template['transformBasename']))
-						$ins->setTransformBasename($template['transformBasename']);
+					if(isset($template['config']['transformBasename']) && is_callable($template['config']['transformBasename']))
+						$ins->setTransformBasename($template['config']['transformBasename']);
 
 				}
 				else throw new InvalidTemplateTypeException(
@@ -334,8 +344,8 @@ class Ecosystem
 	 * @return bool
 	 * 
 	 */
-	public function initStubContent() : bool {
-		return $this->init_stub_content;
+	public function shouldInitializeStubContent() : bool {
+		return $this->initialize_stub_content_with_template;
 	}
 
 	/**
@@ -349,6 +359,9 @@ class Ecosystem
 	public function setFoundation(Foundation $foundation) : Ecosystem {
 
 		$this->foundation = $foundation;
+		
+		if(method_exists($this, 'afterFoundationSet'))
+			$this->afterFoundationSet(...[$this->foundation]);
 
 		return $this;
 
@@ -368,17 +381,18 @@ class Ecosystem
 	 * Generates the template or returns false if generation fails.
 	 *
 	 * @param Template|string|int $template The template to generate.
+	 * @param bool $reinit_stub Whether to reinitialize stubs.
 	 * 
 	 * @return bool|array True if all the stubs are generated, or a table of all not generated with generated stub files.
 	 * 
 	 */
-	protected function generateTemplate(Template|string|int $template) : bool|array {
+	protected function generateTemplate(Template|string|int $template, bool $reinit_stub = false) : bool|array {
 		if((is_string($template) || is_int($template)) && is_subclass_of($st = $this->getTemplateInstance($template), Template::class))
 			$template = $st;
 
 		if(is_subclass_of($template, Template::class)){
 			// beforeGenerate
-			$stubs_result = $template->generateStubsFile();
+			$stubs_result = $template->generateStubsFile(reinit_stub: $reinit_stub);
 
 			return count($stubs_result['not_generated']) == 0 ? true : $stubs_result;
 
@@ -389,14 +403,16 @@ class Ecosystem
 
 	/**
 	 * Generates all templates within the ecosystem.
+	 * 
+	 * @param bool $reinit_stub Whether to reinitialize stubs.
 	 *
 	 * @return array An array of generation results for each template.
 	 * 
 	 */
-	public function generateTemplates() : array {
+	public function generateTemplates(bool $reinit_stub = false) : array {
 		$generated = [];
 		foreach ($this->templates_instance as $template_name => $template_instance) {
-			$generated[$template_name] = $this->generateTemplate(template : $template_instance);
+			$generated[$template_name] = $this->generateTemplate(template : $template_instance, reinit_stub: $reinit_stub);
 		}
 		return $generated;
 	}
