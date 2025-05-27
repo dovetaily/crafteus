@@ -4,6 +4,9 @@ namespace Crafteus\Environment\Support;
 
 use Crafteus\Environment\Template;
 
+/**
+ * @method void afterConfigUpdated(array $new_config, array $old_config, array $template) Executes after the initial configuration is updated, which initializes the template.
+ */
 class AnonymousTemplate extends Template
 {
 
