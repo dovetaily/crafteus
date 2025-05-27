@@ -113,13 +113,15 @@ class App
 	/**
 	 * Generate all foundation templates on the ecosystem.
 	 *
+	 * @param bool $reinit_stub Whether to reinitialize stubs.
+	 *
 	 * @return array Returns generate results of all foundations
 	 * 
 	 */
-	public function generate() : array {
+	public function generate(bool $reinit_stub = false) : array {
 
 		return array_map(
-			fn($foundation) => $foundation->generateEcosystem(),
+			fn($foundation) => $foundation->generateEcosystem(reinit_stub: $reinit_stub),
 			$this->foundations
 		);
 
