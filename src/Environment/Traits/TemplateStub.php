@@ -11,22 +11,23 @@ trait TemplateStub {
 	/**
 	 * All stub objects for the template.
 	 *
-	 * @var ?array<Stub>
+	 * @var array<Stub>|null
 	 */
-	private ?array $stubs = null;
+	private array|null $stubs = null;
 
 	/**
 	 * Initializes the stub files for the template.
 	 *
 	 * @param bool $generate_stub_content Whether to generate content for the stubs.
+	 * @param bool $force If `true` it forces the initialization of stubs.
 	 * 
 	 * @return self
 	 * @throws StubAlreadyExistsException If Stub already exists.
 	 * 
 	 */
-	public function initStub(bool $generate_stub_content = true) : Template {
+	public function initStub(bool $generate_stub_content = true, bool $force = false) : Template {
 		
-		if(is_null($this->stubs)){
+		if(is_null($this->stubs) || $force){
 			$this->stubs = [];
 	
 			foreach ($this->getPath() as $key => $path) {
@@ -120,10 +121,10 @@ trait TemplateStub {
 	/**
 	 * Retrieves all stub objects.
 	 *
-	 * @return array List of stub objects.
+	 * @return array|null List of stub objects.
 	 * 
 	 */
-	public function getStubs() : array {
+	public function getStubs() : array|null {
 		return $this->stubs;
 	}
 
@@ -136,7 +137,7 @@ trait TemplateStub {
 	 * 
 	 */
 	public function getStub(string|int $key) : ?Stub {
-		return !is_null($this->stubs) && isset($this->stubs[$key]) ? $this->stubs[$key] : null;
+		return $this->stubs[$key] ?? null;
 	}
 
 	/**
@@ -186,27 +187,29 @@ trait TemplateStub {
 	/**
 	 * Generates all stub files for the template.
 	 *
-	 * @param bool $generate_stub_content Whether to generate content for all stubs.
+	 * @param bool|null $generate_stub_content Whether to generate content for all stubs (default verification if `null`).
 	 * @param bool $cancel_all_on_error Whether to cancel all generation on error.
 	 * @param bool $reinit_stub Whether to reinitialize stubs.
 	 * 
 	 * @return array Result of the generation process, including generated and not generated stubs.
 	 * 
 	 */
-	public function generateStubsFile(bool $generate_stub_content = true, bool $cancel_all_on_error = true, bool $reinit_stub = false) : array {
+	public function generateStubsFile(bool|null $generate_stub_content = null, bool $cancel_all_on_error = true, bool $reinit_stub = false) : array {
 		$result = [
 			'generated' => [],
 			'not_generated' => [],
 		];
 
-		if(is_null($this->stubs) || $reinit_stub) $this->initStub(false);
+		$verif = is_null($this->stubs) || $reinit_stub;
+
+		if($verif) $this->initStub(false, $reinit_stub);
 
 		foreach ($this->stubs as $key => $stub) {
 			try {
-				$file_generated = $this->generateStubFile(stub : $stub, generate_stub_content : $generate_stub_content);
+				$file_generated = $this->generateStubFile(stub : $stub, generate_stub_content : is_null($generate_stub_content) ? $verif : $generate_stub_content);
 			} catch (\Throwable $th) {
 				$file_generated = false;
-				// echo $th;
+				echo Helper::redText(' > ') . $th->getMessage(). Helper::redText(' [File]: ' . $th->getFile() . ':' . $th->getLine()) . (!is_null($prev = $th->getPrevious()) ? Helper::redText("\n    > ") . $prev->getMessage() . Helper::redText(' [File]: ' . $prev->getFile() . ':' . $prev->getLine()) : '');
 			}
 			$result[$file_generated ? 'generated' : 'not_generated'][$key] = $stub;
 		}

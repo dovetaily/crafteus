@@ -4,6 +4,7 @@ namespace Crafteus\Environment;
 
 use Crafteus\Exceptions\InvalidEcosystemException;
 use Crafteus\Exceptions\TemplateNotRecognizedException;
+use Crafteus\Support\Helper;
 
 class Foundation
 {
@@ -78,6 +79,9 @@ class Foundation
 	 */
 	public function cleanEcosystem() : void {
 		$this->cleanTemplateEcosystem();
+		
+		if(method_exists($eco = $this->getEcosystemInstance(), 'afterFoundationCleanEcosystem'))
+			$eco->afterFoundationCleanEcosystem(...[$this]);
 	}
 
 	/**
@@ -110,7 +114,11 @@ class Foundation
 
 			$template_instance = $ecosystem_instance->getTemplateInstance(
 				$template_name,
-				$this->templates_config[$template_name] ?? []
+				array_merge(
+					$this->templates_config['*'] ?? [], 
+					Helper::filterAndMergeByKey($template_name, $this->templates_config),
+					$this->templates_config[$template_name] ?? []
+				)
 			);
 
 			if($template_instance === false)
@@ -119,8 +127,11 @@ class Foundation
 					get_class($ecosystem_instance),
 					code : 4200
 				);
+
+			if(method_exists($ecosystem_instance, 'afterFoundationCleanTemplateEcosystem'))
+				$ecosystem_instance->afterFoundationCleanTemplateEcosystem(...[$template_instance, $this]);
 			
-			if($ecosystem_instance->initStubContent())
+			if($ecosystem_instance->shouldInitializeStubContent())
 					$template_instance->initStub();
 
 		}
@@ -153,12 +164,14 @@ class Foundation
 	/**
 	 * Generates templates from the ecosystem and returns the results.
 	 *
+	 * @param bool $reinit_stub Whether to reinitialize stubs.
+	 *
 	 * @return array List of generated templates.
 	 * 
 	 */
-	public function generateEcosystem() : array {
+	public function generateEcosystem(bool $reinit_stub = false) : array {
 
-		return $this->getEcosystemInstance()->generateTemplates();
+		return $this->getEcosystemInstance()->generateTemplates(reinit_stub: $reinit_stub);
 
 	}
 

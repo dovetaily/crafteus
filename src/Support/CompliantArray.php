@@ -44,6 +44,13 @@ class CompliantArray
 				$more_compliant = $value['data'];
 				unset($value['data']);
 			}
+			
+			$more_keys_compliant = null;
+			
+			if(isset($value['keys'])){
+				$more_keys_compliant = $value['keys'];
+				unset($value['keys']);
+			}
 
 			$rule = new Rule(...['name' => $key, ...$value, 'message' => $message ?? []]);
 			
@@ -70,6 +77,19 @@ class CompliantArray
 
 				$this->setErrors(array_merge($this->errors, $compliant->errors));
 				// $this->errors = array_merge($this->errors, $compliant->errors);
+
+			}
+			if(is_array($current_data) && is_array($more_keys_compliant) && !empty($more_keys_compliant)){
+				foreach ($current_data as $key_ => $data) {
+
+					$compliant = (new CompliantArray(
+						rules : $more_keys_compliant,
+						data : is_array($data) ? $data : []
+					))->check($key_error . '.' . (is_string($data) ? $data . '[is not array]' : $key_));
+
+					$this->setErrors(array_merge($this->errors, $compliant->errors));
+
+				}
 
 			}
 

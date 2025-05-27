@@ -2,6 +2,7 @@
 
 namespace Crafteus\Environment;
 
+use Crafteus\Crafteus;
 use Crafteus\Environment\Support\Templating;
 use Crafteus\Exceptions\BaseErrorException;
 use Crafteus\Exceptions\DirectoryCreationException;
@@ -9,6 +10,7 @@ use Crafteus\Exceptions\FileDeletionException;
 use Crafteus\Exceptions\FileGenerationException;
 use Crafteus\Exceptions\FileNotReadableException;
 use Crafteus\Exceptions\PermissionDeniedException;
+use Crafteus\Exceptions\PhpStubException;
 use SplFileInfo;
 use Crafteus\Support\Helper;
 
@@ -127,6 +129,16 @@ class Stub extends SplFileInfo
 	 * @var array<string>
 	 */
 	protected array $keywords = [];
+
+	/**
+	 * Stores content that cannot be written to a file due to write restrictions.
+	 * 
+	 * When file writing is disabled, new content is stored in this property 
+	 * until writing is allowed again.
+	 * 
+	 * @var string|null $deferred_content The deferred content awaiting file write.
+	 */
+	public $deferred_content;
 
 	/**
 	 * Stub constructor.
@@ -316,6 +328,7 @@ class Stub extends SplFileInfo
 	 * 
 	 */
 	public function setCurrentContent(string|null $content = null) : Stub {
+		if(Crafteus::$disable_file_writing) $this->deferred_content = $content;
 		$this->current_content = $content;
 		return $this;
 	}
@@ -327,7 +340,7 @@ class Stub extends SplFileInfo
 	 * 
 	 */
 	public function getCurrentContent() : ?string {
-		return $this->current_content;
+		return Crafteus::$disable_file_writing ? $this->deferred_content : $this->current_content;
 	}
 
 	/**
@@ -355,11 +368,14 @@ class Stub extends SplFileInfo
 	/**
 	 * Retrieves the template data.
 	 *
+	 * @param string|null $key
+	 * @param mixed $default_value
+	 * 
 	 * @return array|null
 	 * 
 	 */
-	public function getData() : ?array {
-		return $this->template ? $this->getTemplate()->getData() : null;
+	public function getData(string|null $key = null, $default_value = null) {
+		return $this->template ? $this->getTemplate()->getData($key, $default_value) : null;
 	}
 
 	/**
@@ -371,7 +387,8 @@ class Stub extends SplFileInfo
 	 * 
 	 */
 	private function setLastTemplating($value) : void {
-		$this->last_templating = $value;
+		if($value !== $this->last_templating)
+			$this->last_templating = $value;
 	}
 
 	/**
@@ -385,6 +402,49 @@ class Stub extends SplFileInfo
 	}
 
 	/**
+	 * Returns an instance of the templating engine.
+	 *
+	 * If a previous instance exists and `$force_new` is false, that instance is reused.
+	 * Otherwise, a new instance is created using the provided class name or the one returned by `getTemplating()`.
+	 * 
+	 * If the class does not exist or is not a string, `null` is returned.
+	 *
+	 * If `$update_current_content` is true, the current content of the stub is retrieved 
+	 * and set on the new instance via `setCurrentContent()`.
+	 *
+	 * If `$set_last` is true, the created or reused instance is stored via `setLastTemplating()`.
+	 *
+	 * @param string|null $templating The fully qualified class name of the templating engine to instantiate.
+	 *                    Falls back to `getTemplating()` if null.
+	 * @param bool $set_last Whether to store the instance as the last used templating engine.
+	 * @param bool $force_new Whether to force creation of a new instance even if one already exists.
+	 * @param bool $update_current_content Whether to update the new instance with the current stub content.
+	 *
+	 * @return object|null The templating engine instance, or null if instantiation failed.
+	 */
+	public function getTemplatingInstance(?string $templating = null, bool $set_last = false, bool $force_new = false, bool $update_current_content = true) : object|null {
+
+		$templating = $templating ?? $this->getTemplating();
+
+		if(!is_string($templating) || !class_exists($templating))
+			return null;
+
+		$instance = is_object($this->getOldTemplating()) && !$force_new
+			? $this->getOldTemplating()
+			: new $templating(...[$this])
+		;
+
+		if($update_current_content)
+			$instance->setCurrentContent($instance->getStub()->getCurrentContent());
+
+		if($set_last)
+			$this->setLastTemplating($instance);
+
+		return $instance;
+
+	}
+
+	/**
 	 * Generates content using the templating mechanism.
 	 *
 	 * @return bool
@@ -395,18 +455,15 @@ class Stub extends SplFileInfo
 		$templating = $this->getTemplating();
 		if(class_exists($templating) || is_callable($templating)){
 			if(is_string($templating) && class_exists($templating)){
-				$_templating = is_object($this->getOldTemplating())
-					? $this->getOldTemplating()
-					: new $templating(...[$this])
-				;
+				$_templating = $this->getTemplatingInstance();
 				if(method_exists($_templating, 'run'))
 					$_templating->run();
 				// if(!is_object($this->getOldTemplating()))
 				$this->setLastTemplating($_templating);
 				$result = true;
 			}
-			else if(!is_string($this->templating)) {
-				$res = ($this->templating)(...[$this]);
+			else if(!is_string($templating)) {
+				$res = ($templating)(...[$this]);
 				if(is_array($res))
 					$this->setLastTemplating($res);
 				$result = true;
@@ -430,7 +487,10 @@ class Stub extends SplFileInfo
 	 */
 	public function generateContentFile(?string $content = null) : bool {
 		if($this->isWritable()){
-			file_put_contents($this->getFilePath(), $content ?? $this->getCurrentContent());
+			if(Crafteus::$disable_file_writing)
+				$this->deferred_content = $content ?? $this->getCurrentContent();
+			else
+				file_put_contents($this->getFilePath(), $content ?? $this->getCurrentContent());
 			return true;
 		}
 		return false;
@@ -487,10 +547,17 @@ class Stub extends SplFileInfo
 				E_WARNING
 			);
 
-			if($this->getOriginType() === 'file')
-				copy($this->getOriginStub(), $this->getFilePath());
-			else
-				file_put_contents($this->getFilePath(), $this->getStubContent());
+			if($this->getOriginType() === 'file'){
+				if(Crafteus::$disable_file_writing)
+					$this->deferred_content = file_get_contents($this->getOriginStub());
+				else copy($this->getOriginStub(), $this->getFilePath());
+			}
+			else{
+
+				if(Crafteus::$disable_file_writing)
+					$this->deferred_content = $this->getStubContent();
+				else file_put_contents($this->getFilePath(), $this->getStubContent());
+			}
 
 			restore_error_handler();
 
@@ -510,13 +577,22 @@ class Stub extends SplFileInfo
 	 * @return void
 	 * 
 	 */
-	public function phpStub() : void {
-		$c = (function($data, $stub){
-			ob_start();
-			include $stub->getOriginStub();
-			return ob_get_clean();
-		})($this->getData());
-		// Helper::dd($c);
+	public function phpStub() : void
+	{
+		try {
+			$c = (function($data, $stub){
+				ob_start();
+				include $stub->getOriginStub();
+				return ob_get_clean();
+			})($this->getData(), $this);
+			$this->setCurrentContent($c)->generateContentFile();
+		} catch (\Throwable $th) {
+			$this->addErrors(new PhpStubException(
+				$this->getOriginStub(),
+				code : 5503,
+				previous: $th
+			));
+		}
 	}
 
 	/**
@@ -542,6 +618,8 @@ class Stub extends SplFileInfo
 		);
 
 		unlink($path);
+
+		restore_error_handler();
 
 	}
 
@@ -618,10 +696,10 @@ class Stub extends SplFileInfo
 	/**
 	 * Retrieves the old content of the file.
 	 *
-	 * @return string
+	 * @return string|null
 	 * 
 	 */
-	public function getOldContent() : string {
+	public function getOldContent() : ?string {
 		return $this->old_content;
 	}
 
@@ -673,6 +751,34 @@ class Stub extends SplFileInfo
 	 */
 	public function getBasename(string $suffix = "") : string {
 		return $this->basename . $suffix;
+	}
+
+	/**
+	 * Retrieves the configuration filtered by Stub from the Template's public properties.
+	 * For certain properties, it applies a key-based filtering using the `getUniqueConfig` method.
+	 *
+	 * @param string|null $key
+	 * @param mixed $default_value
+	 * 
+	 * @return mixed The filtered configuration of the Template.
+	 */
+	public function getConfig(string|null $key = null, $default_value = null) {
+		$result = $this->template->getConfig();
+		foreach ($result as $key_ => $conf) {
+			if(in_array($key_, array_unique(array_merge(Template::UNIQUE_STUB_CONFIG_PROPERTIES, $this->template->getUniqueStubConfigProperties()))))
+				$result[$key_] = Template::getUniqueConfig($conf, $this->key_id);
+		}
+		return is_null($key) ? $result : Helper::getNestedArrayValue($key, $result, $default_value)['result'];
+	}
+
+	/**
+	 * Retrieves the ecosystem instance.
+	 *
+	 * @return Ecosystem Ecosystem instance.
+	 * 
+	 */
+	public function getEcosystem() : Ecosystem {
+		return $this->getTemplate()->getEcosystem();
 	}
 
 }

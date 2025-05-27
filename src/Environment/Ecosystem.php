@@ -2,6 +2,7 @@
 
 namespace Crafteus\Environment;
 
+use Crafteus\Crafteus;
 use Crafteus\Environment\Template;
 use Crafteus\Environment\Support\AnonymousTemplate;
 use Crafteus\Exceptions\DuplicateTemplateInstanceException;
@@ -44,7 +45,7 @@ class Ecosystem
 	 *
 	 * @var bool
 	 */
-	protected bool $init_stub_content = false;
+	protected bool $initialize_stub_content_with_template = false;
 
 	/**
 	 * Indicates whether existing files should be replaced.
@@ -59,6 +60,13 @@ class Ecosystem
 	 * @var bool
 	 */
 	public bool $cancel_all_on_error = false;
+
+	/**
+	 * Current ecosystem data.
+	 *
+	 * @var array|null
+	 */
+	protected ?array $current_data = null;
 
 	/**
 	 * Abstract method that must be implemented in subclasses to provide templates.
@@ -131,6 +139,8 @@ class Ecosystem
 								}
 							}
 						}
+						if(method_exists($ins, 'afterConfigUpdated'))
+							$ins->afterConfigUpdated(...[$origin_config]); // old_config
 						// update config stop...
 
 						$this->compliantTemplateArray(
@@ -162,6 +172,14 @@ class Ecosystem
 					foreach ($more_config as $key => $value)
 						if(array_key_exists($key, $origin_config) && $origin_config[$key] !== $value)
 							$template['config'][$key] = $value;
+					
+					if(isset($template['afterConfigUpdated']) && is_callable($template['afterConfigUpdated'])){
+						$template['afterConfigUpdated'](...[
+							$template['config'], // &$new_config
+							$origin_config,  // $old_config
+							$template
+						]);
+					}
 					// update config stop ...
 
 					$this->compliantTemplateArray(
@@ -185,8 +203,8 @@ class Ecosystem
 						->setEcosystem($this)
 						->setTemplateName($template_name)
 					;
-					if(isset($template['getFileName']) && is_callable($template['getFileName']))
-						$ins->setGetFileName($template['getFileName']);
+					if(isset($template['config']['transformBasename']) && is_callable($template['config']['transformBasename']))
+						$ins->setTransformBasename($template['config']['transformBasename']);
 
 				}
 				else throw new InvalidTemplateTypeException(
@@ -326,8 +344,8 @@ class Ecosystem
 	 * @return bool
 	 * 
 	 */
-	public function initStubContent() : bool {
-		return $this->init_stub_content;
+	public function shouldInitializeStubContent() : bool {
+		return $this->initialize_stub_content_with_template;
 	}
 
 	/**
@@ -341,6 +359,9 @@ class Ecosystem
 	public function setFoundation(Foundation $foundation) : Ecosystem {
 
 		$this->foundation = $foundation;
+		
+		if(method_exists($this, 'afterFoundationSet'))
+			$this->afterFoundationSet(...[$this->foundation]);
 
 		return $this;
 
@@ -360,17 +381,18 @@ class Ecosystem
 	 * Generates the template or returns false if generation fails.
 	 *
 	 * @param Template|string|int $template The template to generate.
+	 * @param bool $reinit_stub Whether to reinitialize stubs.
 	 * 
 	 * @return bool|array True if all the stubs are generated, or a table of all not generated with generated stub files.
 	 * 
 	 */
-	protected function generateTemplate(Template|string|int $template) : bool|array {
+	protected function generateTemplate(Template|string|int $template, bool $reinit_stub = false) : bool|array {
 		if((is_string($template) || is_int($template)) && is_subclass_of($st = $this->getTemplateInstance($template), Template::class))
 			$template = $st;
 
 		if(is_subclass_of($template, Template::class)){
 			// beforeGenerate
-			$stubs_result = $template->generateStubsFile();
+			$stubs_result = $template->generateStubsFile(reinit_stub: $reinit_stub);
 
 			return count($stubs_result['not_generated']) == 0 ? true : $stubs_result;
 
@@ -381,14 +403,16 @@ class Ecosystem
 
 	/**
 	 * Generates all templates within the ecosystem.
+	 * 
+	 * @param bool $reinit_stub Whether to reinitialize stubs.
 	 *
 	 * @return array An array of generation results for each template.
 	 * 
 	 */
-	public function generateTemplates() : array {
+	public function generateTemplates(bool $reinit_stub = false) : array {
 		$generated = [];
 		foreach ($this->templates_instance as $template_name => $template_instance) {
-			$generated[$template_name] = $this->generateTemplate(template : $template_instance);
+			$generated[$template_name] = $this->generateTemplate(template : $template_instance, reinit_stub: $reinit_stub);
 		}
 		return $generated;
 	}
@@ -414,5 +438,61 @@ class Ecosystem
 	 */
 	public function cancelAllOnError() : bool {
 		return $this->cancel_all_on_error;
+	}
+
+	/**
+	 * Retrieves the ecosystem current data.
+	 *
+	 * @throws InvalidTemplateDataException If the data does not comply with the rules.
+	 * @return array Validated template data.
+	 * 
+	 */
+	public function getData() : array {
+
+		if(is_null($this->current_data))
+			$this->initData();
+
+		return $this->current_data;
+
+	}
+
+	/**
+	 * Initializes the ecosystem current data from the ecosystem's foundation.
+	 *
+	 * @param bool $force Forces the initialization of the data if it is true.
+	 *
+	 * @return void
+	 * 
+	 */
+	protected function initData(bool $force = false) : void {
+
+		if(is_null($this->current_data) || $force)
+			$this->setCurrentData($this->getFoundation()->getData());
+
+	}
+	
+	/**
+	 * Set the ecosystem data
+	 *
+	 * @param array $data
+	 * 
+	 * @return void
+	 * 
+	 */
+	protected function setCurrentData(array $data) : void {
+
+		$this->current_data = $data;
+
+	}
+
+	/**
+	 * Creates and registers multiple foundations.
+	 * 
+	 * @param array $data An array of foundation data. Each entry should have the foundation name as the key, and the associated data as the value.
+	 * @param array $templates_config Additional configuration for templates. Optional.
+	 * @return \App\Crafteus\Environment\App Returns the current instance for method chaining.
+	 */
+	public static function make(array $data, array $templates_config = []) : App{
+		return Crafteus::make(static::class, $data, $templates_config);
 	}
 }

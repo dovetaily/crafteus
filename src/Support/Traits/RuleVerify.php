@@ -5,7 +5,7 @@ trait RuleVerify{
 	
 	public function checkVerify($data, bool $data_exists = true/* , $key = null */) {
 		if($data_exists || ($this->getRequired() && !$data_exists)){
-			$auto = [
+			$verification_method = [
 				'file_exists' => function($data, $data_exists, $rule, $verify, $method){
 					// exit('sss');
 					if($rule->errorExists()) return null;
@@ -24,7 +24,13 @@ trait RuleVerify{
 								preg_match('/^array<([^\\>\\<]+)>$/i', $verify, $m);
 								$types = explode(',', end($m));
 								foreach ($data as $value) {
-									if(!in_array((!is_string($data) && is_callable($data) && gettype($data) == 'object') ? 'function' : gettype($value), $types)){
+									if(!in_array(
+										(!is_string($value) && is_callable($value) && gettype($value) == 'object')
+											? 'function'
+											: gettype($value)
+										,
+										$types
+									)){
 									// if(!in_array(gettype($value), $types)){
 										$check = 'The key `:name` values has not only types : '. implode(',', $types);
 										break;
@@ -32,6 +38,22 @@ trait RuleVerify{
 									# code...
 								}
 							// }
+						}
+						return $check;
+					}
+				],
+				'regexp' => [
+					'detect' => fn ($v) => preg_match('/^regexp\\:.*$/i', $v),
+					'call' => function($data, $data_exists, $rule, $verify){
+						$check = null;
+						if($data_exists){
+							preg_match('/^regexp\\:(.*)$/i', $verify, $m);
+							$pattern = end($m);
+							if(!empty($pattern)){
+								if(!((bool) preg_match($pattern, $data))){
+									$check = 'The key `:name` value has not respect regexp : ' . $pattern;
+								}
+							}
 						}
 						return $check;
 					}
@@ -46,14 +68,14 @@ trait RuleVerify{
 				foreach ($verify_values as $verify) {
 
 					if(!is_string($verify) && is_callable($verify)){
-						$error = $verify($data, $data_exists, $this);
+						$error = $verify($data, $data_exists, $this, $verification_method);
 						if(!empty($error))
 							$check = ['state' => false, 'errors' => is_array($error) ? $error : [$error]];
 					}
 					elseif(is_string($verify)) {
 						$errors = [];
 						$recognized = false;
-						foreach ($auto as $method => $val) {
+						foreach ($verification_method as $method => $val) {
 							$error = null;
 							// var_dump($val);
 							if($verify == $method && is_callable($val)){
