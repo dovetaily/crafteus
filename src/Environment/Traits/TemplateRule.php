@@ -134,7 +134,7 @@ trait TemplateRule {
 			'generate' => [
 				'required' => true,
 				// 'empty' => false,
-				'type' => 'boolean',
+				'type' => 'array|boolean',
 			],
 			'templating' => [
 				'required' => false,
