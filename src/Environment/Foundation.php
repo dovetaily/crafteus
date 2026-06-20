@@ -211,4 +211,14 @@ class Foundation
 
 	}
 
+	/**
+	 * Get App object.
+	 *
+	 * @return App
+	 * 
+	 */
+	public function getApp() : App {
+		return $this->app;
+	}
+
 }
