@@ -96,6 +96,16 @@ class App
 	}
 
 	/**
+	 * Retrieves all foundations.
+	 *
+	 * @return array<Foundation>
+	 * 
+	 */
+	public function getFoundations() : array{
+		return $this->foundations;
+	}
+
+	/**
 	 * Retrieves a foundation instance by its name.
 	 * 
 	 * @param string|int $name The name of the foundation.
@@ -108,6 +118,18 @@ class App
 			: null
 		;
 
+	}
+
+	/**
+	 * Checks if foundation exists.
+	 *
+	 * @param string|int $name
+	 * 
+	 * @return bool
+	 * 
+	 */
+	public function foundationExists(string|int $name) : bool {
+		return array_key_exists($name, $this->getFoundations());
 	}
 	
 	/**
