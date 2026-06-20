@@ -15,6 +15,11 @@ use Crafteus\Exceptions\TemplateConfigException;
 use Crafteus\Exceptions\TemplateValidationException;
 use Crafteus\Support\Helper;
 
+/**
+ * @method void afterFoundationSet(\Crafteus\Environment\Foundation $foundation) Executes after the foundation has been set.
+ * @method void afterFoundationCleanEcosystem(\Crafteus\Environment\Foundation $foundation) Executes actions after the foundation has cleaned (reviewed and fixed) all ecosystem templates.
+ * @method void afterFoundationCleanTemplateEcosystem(\Crafteus\Environment\Template $template, \Crafteus\Environment\Foundation $foundation) Executes actions after the foundation has cleaned (reviewed and fixed) ecosystem template.
+ */
 class Ecosystem
 {
 

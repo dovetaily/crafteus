@@ -10,6 +10,7 @@ use Crafteus\Support\Helper;
 
 /**
  * @method string|array transformBaseName(string|int $key_path) Retrieves the file name for the template.
+ * @method void afterConfigUpdated(array $origin_config) Executes after the initial configuration is updated, which initializes the template.
  */
 class Template
 {
