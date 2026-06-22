@@ -1,12 +1,29 @@
 <?php
 namespace Crafteus\Environment\Traits;
 
+use Crafteus\Environment\Ecosystem;
 use Crafteus\Exceptions\StubAlreadyExistsException;
 use Crafteus\Environment\Stub;
 use Crafteus\Environment\Template;
 use Crafteus\Support\Helper;
 
 trait TemplateStub {
+
+	abstract protected function getExtension(string|int|null $key = null, bool $last = false) : array|string;
+
+	abstract protected function getPath() : array;
+
+	abstract protected function getStubFile(string|int|null $key = null, bool $last = false) : array|string;
+
+	abstract protected function getGenerate(string|int|null $key = null, bool $last = false) : array|bool;
+
+	abstract private function getBaseName(string|int|null $key = null, bool $last = false) : array|string;
+
+	abstract protected function getTemplating(string|int|null $key = null, bool $last = false) : array|string|\Closure;
+
+	abstract public function getTemplateName() : string;
+
+	abstract public function getEcosystem() : ?Ecosystem;
 
 	/**
 	 * All stub objects for the template.
@@ -153,13 +170,25 @@ trait TemplateStub {
 			? $this->getStub($stub)
 			: $stub
 		;
+
 		if($stub){
-			if($stub->getOriginType() == 'file' && preg_match('/.php.stub$/i', $file = $stub->getOriginStub()))
+
+			if(
+				$stub->getOriginType() == 'file' &&
+				preg_match(
+					'/.php.stub$/i',
+					$stub->getOriginStub()
+				)
+			){
 				$stub->phpStub();
+			}
 	
 			$stub->generateContentWithTemplating();
+
 			return true;
+
 		}
+
 		return false;
 	}
 
@@ -205,19 +234,59 @@ trait TemplateStub {
 		if($verif) $this->initStub(false, $reinit_stub);
 
 		foreach ($this->stubs as $key => $stub) {
+
 			try {
-				$file_generated = $this->generateStubFile(stub : $stub, generate_stub_content : is_null($generate_stub_content) ? $verif : $generate_stub_content);
+
+				$file_generated = $this->generateStubFile(
+					stub : $stub,
+					generate_stub_content : is_null($generate_stub_content)
+						? $verif
+						: $generate_stub_content
+				);
+
 			} catch (\Throwable $th) {
+
 				$file_generated = false;
-				echo Helper::redText(' > ') . $th->getMessage(). Helper::redText(' [File]: ' . $th->getFile() . ':' . $th->getLine()) . (!is_null($prev = $th->getPrevious()) ? Helper::redText("\n    > ") . $prev->getMessage() . Helper::redText(' [File]: ' . $prev->getFile() . ':' . $prev->getLine()) : '');
+
+				echo 
+					Helper::redText(' > ') .
+					$th->getMessage() .
+					Helper::redText(' [File]: ' .
+					$th->getFile() .
+					':' . $th->getLine()) .
+					(
+						!is_null($prev = $th->getPrevious())
+							? (
+								Helper::redText("\n    > ") .
+								$prev->getMessage() .
+								Helper::redText(
+									' [File]: ' .
+									$prev->getFile() .
+									':' . $prev->getLine()
+								)
+							)
+							: ''
+					)
+				;
 			}
+
 			$result[$file_generated ? 'generated' : 'not_generated'][$key] = $stub;
+
 		}
+
 		if($cancel_all_on_error && count($result['not_generated']) > 0){
-			array_map(fn ($stub) => $stub->cancelGenerateFile(), [
-				...($this->getEcosystem()->cancelAllOnError() ? $result['generated'] : []), 
-				...$result['not_generated']
-			]);
+
+			array_map(
+				fn (Stub $stub) => $stub->cancelGenerateFile(),
+				[
+					...($this->getEcosystem()->cancelAllOnError()
+						? $result['generated']
+						: []
+					),
+					...$result['not_generated']
+				]
+			);
+
 		}
 		return $result;
 	}

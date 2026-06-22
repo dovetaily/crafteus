@@ -371,7 +371,7 @@ class Stub extends SplFileInfo
 	 * @param string|null $key
 	 * @param mixed $default_value
 	 * 
-	 * @return array|null
+	 * @return mixed
 	 * 
 	 */
 	public function getData(string|null $key = null, $default_value = null) {
@@ -453,7 +453,7 @@ class Stub extends SplFileInfo
 	public function generateContentWithTemplating() : bool {
 		$result = false;
 		$templating = $this->getTemplating();
-		if(class_exists($templating) || is_callable($templating)){
+		if((is_string($templating) && class_exists($templating)) || is_callable($templating)){
 			if(is_string($templating) && class_exists($templating)){
 				$_templating = $this->getTemplatingInstance();
 				if(method_exists($_templating, 'run'))
@@ -469,10 +469,11 @@ class Stub extends SplFileInfo
 				$result = true;
 			}
 		}
-		else if(method_exists($this->template, $m = 'templating')){
-			$res = $this->template->$m(...[$this]);
+		else if(method_exists($this->getTemplate(), $m = 'templating')){
+			$res = $this->getTemplate()->$m(...[$this]);
 			if(is_array($res))
 				$this->setLastTemplating($res);
+			$result = true;
 		}
 		return $result;
 	}
