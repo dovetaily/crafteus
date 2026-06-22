@@ -204,7 +204,7 @@ class Ecosystem
 					}
 
 					$ins
-						->setConfigRule($template['rules']['config'])
+						->setConfigRule($template['rules']['config'] ?? [])
 						->setEcosystem($this)
 						->setTemplateName($template_name)
 					;
@@ -495,9 +495,9 @@ class Ecosystem
 	 * 
 	 * @param array $data An array of foundation data. Each entry should have the foundation name as the key, and the associated data as the value.
 	 * @param array $templates_config Additional configuration for templates. Optional.
-	 * @return \App\Crafteus\Environment\App Returns the current instance for method chaining.
+	 * @return \Crafteus\Environment\App Returns the current instance for method chaining.
 	 */
-	public static function make(array $data, array $templates_config = []) : App{
+	public static function make(array $data, array $templates_config = []) : App {
 		return Crafteus::make(static::class, $data, $templates_config);
 	}
 }

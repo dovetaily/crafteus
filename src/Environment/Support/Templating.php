@@ -76,6 +76,21 @@ class Templating
 	}
 
 	/**
+	 * Set an holder value.
+	 *
+	 * @param string|int $key
+	 * @param array|null $value
+	 * 
+	 * @return Templating
+	 * 
+	 */
+	public function setHolder(string|int $key, array|null $value) : self {
+		$this->holders[$key] = $value;
+
+		return $this;
+	}
+
+	/**
 	 * Get an holder value.
 	 *
 	 * @param string|int $key
@@ -88,6 +103,20 @@ class Templating
 			? $this->holders[$key]
 			: false
 		;
+	}
+
+	/**
+	 * Set holders values.
+	 *
+	 * @param array|null $value
+	 * 
+	 * @return Templating
+	 * 
+	 */
+	public function setHolders(array|null $value) : self {
+		$this->holders = $value;
+
+		return $this;
 	}
 
 	/**
@@ -107,10 +136,20 @@ class Templating
 	 * 
 	 */
 	public function run() : void {
+	
 		if(!is_null($this->getHolders())){
-			$this->setCurrentContent(Templating::__replacer($this->getHolders() ?? [], $this->getCurrentContent()));
+
+			$this->setCurrentContent(
+				Templating::__replacer(
+					$this->getHolders() ?? [],
+					$this->getCurrentContent()
+				)
+			);
+
 			$this->applyContent();
+
 		}
+
 	}
 
 	/**
