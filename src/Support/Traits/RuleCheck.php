@@ -12,7 +12,7 @@ trait RuleCheck{
 		];
 	}
 
-	public function check($data = null, bool $data_exists = true, ?array $list = null, ...$args) {
+	public function check(mixed $data = null, bool $data_exists = true, ?array $list = null, mixed ...$args) {
 		foreach ($list ?? self::checkList() as $method) {
 			if(is_callable($method)) $method($data, $this);
 			else {
@@ -37,26 +37,39 @@ trait RuleCheck{
 		}
 	}
 
-
-	public function checkType($data, bool $data_exists = true) {
-		if(!is_null($types = $this->getType()) && ($data_exists || ($this->getRequired() && !$data_exists))){
+	public static function checkTypes(mixed $data, array $types) : bool {
 			$check = false;
+
 			foreach ($types as $type) {
 				if(
 					gettype($data) == $type || 
-					($type == 'function' && !is_string($data) && is_callable($data) && gettype($data) == 'object')
+					(
+						$type == 'function' &&
+						!is_string($data) &&
+						is_callable($data) &&
+						gettype($data) == 'object'
+					)
 				){
 					$check = true;
 					break;
 				}
 			}
+
 			return $check;
+
+	}
+
+	public function checkType(mixed $data, bool $data_exists = true) {
+		if(!is_null($types = $this->getType()) && ($data_exists || ($this->getRequired() && !$data_exists))){
+
+			return self::checkTypes($data, $types);
+
 			// return !$check ? $this->getEmpty() && !$data_exists : true;
 			// return !$check ? $this->checkEmpty($data, $data_exists) : true;
 		}
 		return true;
 	}
-	public function initCheckType($data, bool $data_exists = true) {
+	public function initCheckType(mixed $data, bool $data_exists = true) {
 		if(!$this->checkType($data, $data_exists)){
 			$type = $this->getType();
 			$this->addError('type', $this->formatMessage('type', replace_values : [':available_type' => '(' . implode(', ', $type) . ')' ]));
@@ -64,7 +77,7 @@ trait RuleCheck{
 	}
 
 
-	public function checkEmpty($data, bool $data_exists) {
+	public function checkEmpty(mixed $data, bool $data_exists) {
 		if($data_exists || ($this->getRequired() && !$data_exists)){
 			if(!$this->getEmpty() && !$data_exists) return false;
 			else if(!$this->getEmpty()) {
@@ -92,7 +105,7 @@ trait RuleCheck{
 		}
 		return true;
 	}
-	public function initCheckEmpty($data, bool $data_exists = true) {
+	public function initCheckEmpty(mixed $data, bool $data_exists = true) {
 		if(!$this->checkEmpty($data, $data_exists)){
 			$this->addError('empty', $this->formatMessage('empty'));
 		}

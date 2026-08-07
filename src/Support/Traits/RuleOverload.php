@@ -6,14 +6,17 @@ trait RuleOverload{
 	public function getRequired() : bool {
 		return $this->required;
 	}
+
 	public function setRequired(bool $required) : void {
 		$this->required = $required;
 	}
 
 
+
 	public function getType() : array|null {
 		return $this->type;
 	}
+
 	public function setType(array|string|callable|null $type) : void {
 		if(!is_null($type)){
 			$this->type = [];
@@ -37,36 +40,43 @@ trait RuleOverload{
 	}
 
 
-	public function getEmpty() : array|callable|bool {
+
+	public function getEmpty() : bool {
 		return $this->empty;
 	}
-	public function setEmpty(bool|callable $empty) : void {
+
+	public function setEmpty(bool $empty) : void {
 		$this->empty = $empty;
-		// $this->empty = is_bool($empty)
-		// 	? ($empty ? [null, '', fn ($v) => is_array($v) && empty($v)] : false)
-		// 	: (is_array($empty)
-		// 		? $empty
-		// 		: (is_string($empty)
-		// 			? explode('|', trim($empty))
-		// 			: [$empty]
-		// 		)
-		// 	)
-		// ;
 	}
+
 
 
 	public function getVerify() : array|null {
 		return $this->verify;
 	}
-	public function setVerify(array|string|callable|null $verify) : void {
+
+	public function setVerify(array|string|callable|\Closure|null $verify) : void {
 		if(!is_null($verify)){
 			$this->verify = is_array($verify) 
 				? $verify 
 				: (is_string($verify)
-					? explode('|', trim($verify))
+					// ? explode('|', trim($verify))
+					? array_map(
+						fn($v) => str_replace(',', '|', $v),
+						explode(
+							'|',
+							preg_replace_callback(
+								'/<[^<>]+>/',
+								fn($value)
+									=> str_replace('|', ',', $value[0]),
+								$verify
+							)
+						)
+					)
 					: [$verify]
 				)
 			;
 		}
 	}
+
 }

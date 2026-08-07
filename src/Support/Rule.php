@@ -19,19 +19,26 @@ class Rule{
 	 */
 	private $name;
 
-	protected $required;
+	protected bool $required;
 
-	protected $type = null;
+	protected array|string|\Closure|null $type = null;
 
-	protected $empty;
+	protected bool $empty;
 
-	protected $verify = null;
+	protected array|string|\Closure|null $verify = null;
 	
 	public $message = [];
 	
 	protected array $errors = [];
 
-	public function __construct(string $name, bool $required = false, $type = null, $empty = false, $verify = null, array $message = []) {
+	public function __construct(
+		string $name,
+		bool $required = false,
+		array|string|callable|null $type = null,
+		bool $empty = false,
+		array|string|callable|null $verify = null,
+		array $message = []
+	) {
 
 		$this->name = $name;
 
@@ -64,7 +71,7 @@ class Rule{
 		return !empty($this->getErrors());
 	}
 
-	protected function addError($key, $message){
+	protected function addError(mixed $key, mixed $message) : void {
 		if(isset($this->errors[$key])){
 			if(is_array($this->errors[$key])) $this->errors[$key][] = $message;
 			else $this->errors[$key] = [$this->errors[$key], $message];
@@ -72,7 +79,7 @@ class Rule{
 		else $this->errors[$key] = $message;
 	}
 
-	public function formatMessage($key, ?string $message = null, array $replace_values = []) : string {
+	public function formatMessage(mixed $key, ?string $message = null, array $replace_values = []) : string {
 
 		$replace_values = [':name' => $this->name, ...$replace_values];
 
