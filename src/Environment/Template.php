@@ -133,14 +133,18 @@ class Template
 	 *
 	 * @param string|null $key
 	 * @param mixed $default_value
-	 * ec
+	 * @param bool $checkCompliantData
+	 * @param bool $forceInitData
+	 * 
 	 * @throws InvalidTemplateDataException If the data does not comply with the rules.
 	 * @return mixed Validated template data.
 	 * 
 	 */
-	public function getData(string|null $key = null, $default_value = null) {
+	public function getData(string|null $key = null, $default_value = null, bool $checkCompliantData = true, bool $forceInitData = false) {
 
-		$this->compliantData();
+		$this->initData($forceInitData);
+
+		if($checkCompliantData) $this->compliantData();
 
 		return is_null($key) ? $this->current_data : Helper::getNestedArrayValue($key, $this->current_data, $default_value)['result'];
 
@@ -154,8 +158,6 @@ class Template
 	 * 
 	 */
 	public function compliantData() : void {
-
-		$this->initData();
 
 		$compliant = Helper::compliantArray(
 			rules : $this->getDataRule(),
@@ -240,7 +242,7 @@ class Template
 	 * @return self
 	 * 
 	 */
-	public function setEcosystem(Ecosystem $ecosystem) : Template {
+	public function setEcosystem(Ecosystem $ecosystem) : self {
 
 		$this->ecosystem = $ecosystem;
 
@@ -272,7 +274,7 @@ class Template
 	 * @return self
 	 * 
 	 */
-	public function setTemplateName(string $template_name) : Template {
+	public function setTemplateName(string $template_name) : self {
 
 		$this->template_name = $template_name;
 
