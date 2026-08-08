@@ -80,7 +80,7 @@ trait TemplateStub {
 				else{
 					$stub->setTemplating($templating);
 					if($generate_stub_content)
-						$this->generateStubContent($stub);
+						$this->applyStubContent($stub);
 				}
 
 			}
@@ -115,7 +115,10 @@ trait TemplateStub {
 		if(is_null($key) || !isset($this->stubs[$key])){
 
 			$stub = new Stub(
-				stub : Helper::normalizePath($stub_file),
+				stub : Helper::looksLikePath($stub_file)
+					? Helper::normalizePath($stub_file)
+					: $stub_file
+				,
 				directory : Helper::normalizePath($directory),
 				basename : $basename,
 				extension : $extension,
@@ -164,8 +167,21 @@ trait TemplateStub {
 	 * 
 	 * @return bool True if content was successfully generated, false otherwise.
 	 * 
+	 * @deprecated use `applyStubContent` method
 	 */
 	protected function generateStubContent(string|int|Stub $stub) : bool {
+		return $this->applyStubContent($stub);
+	}
+
+	/**
+	 * Apply the content for a stub.
+	 *
+	 * @param string|int|Stub $stub The stub object or its key.
+	 * 
+	 * @return bool True if content was successfully generated, false otherwise.
+	 * 
+	 */
+	protected function applyStubContent(string|int|Stub $stub) : bool {
 		$stub = is_string($stub) || is_numeric($stub)
 			? $this->getStub($stub)
 			: $stub
@@ -183,7 +199,7 @@ trait TemplateStub {
 				$stub->phpStub();
 			}
 	
-			$stub->generateContentWithTemplating();
+			$stub->applyContentWithTemplating();
 
 			return true;
 
@@ -207,7 +223,7 @@ trait TemplateStub {
 			: $stub
 		;
 		if(!is_null($stub) && $stub->generateFile($this->getEcosystem()->replace_exist_file)){
-			if($generate_stub_content) $this->generateStubContent($stub);
+			if($generate_stub_content) $this->applyStubContent($stub);
 			return true;
 		}
 		return false;
@@ -266,8 +282,9 @@ trait TemplateStub {
 								)
 							)
 							: ''
-					)
+					) . "\n"
 				;
+
 			}
 
 			$result[$file_generated ? 'generated' : 'not_generated'][$key] = $stub;

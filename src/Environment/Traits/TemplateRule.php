@@ -2,6 +2,7 @@
 namespace Crafteus\Environment\Traits;
 
 use Crafteus\Environment\Template;
+use Crafteus\Support\Helper;
 use Crafteus\Support\Rule;
 
 trait TemplateRule {
@@ -63,19 +64,18 @@ trait TemplateRule {
 	 * @return void
 	 * 
 	 */
-	public function setDataRule(array $rule) : void {
+	public function setDataRule(array $rule) : self {
 		$this->data_rule = $rule;
+		return $this;
 	}
 
 	/**
 	 * Retrieves all rules (configuration and data).
 	 *
-	 * @param mixed $key Optional key to retrieve a specific rule.
-	 * 
 	 * @return array An array containing both 'config' and 'data' rules.
 	 * 
 	 */
-	public function getRules($key) : array {
+	public function getRules() : array {
 		return [
 			'config' => $this->getConfigRule(),
 			'data' => $this->getDataRule(),
@@ -107,7 +107,7 @@ trait TemplateRule {
 			],
 			'stub_file' => [
 				'required' => true,
-				// 'empty' => false,
+				'empty' => true,
 				'type' => 'string|array',
 				'verify' => ['array<string>', function($data, $data_exists, Rule $rule){
 					$check = null;
@@ -116,13 +116,13 @@ trait TemplateRule {
 						if(is_array($data)){
 							$res = [];
 							foreach ($data as $dt) {
-								if(!file_exists($dt))
-									$res[] = 'The stub file `' . $dt . '` doesn\'t exists !';
+								if(Helper::looksLikePath($dt) && !is_readable($dt))
+									$res[] = 'The stub file `' . $dt . '` is not readable !';
 							}
 							if(!empty($res)) $check = $res;
 						}
-						else $check = !file_exists($data) 
-							? 'The stub file `' . $data . '` doesn\'t exists !'
+						else $check = Helper::looksLikePath($data) && !is_readable($data)
+							? 'The stub file `' . $data . '` is not readable !'
 							: null
 						;
 					}
@@ -140,9 +140,9 @@ trait TemplateRule {
 				'required' => false,
 				'empty' => true,
 				'type' => 'string|array|function',
-				'verify' => ['array<string,function>', function($data, $data_exists, Rule $rule){
+				'verify' => ['array<string|function>', function($data, $data_exists, Rule $rule){
 					$check = null;
-					if(!$rule->errorExists()){
+					if(!$rule->errorExists() && $data_exists){
 
 						if(is_array($data)){
 							$res = [];
