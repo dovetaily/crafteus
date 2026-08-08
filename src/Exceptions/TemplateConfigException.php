@@ -5,7 +5,7 @@ class TemplateConfigException extends BaseException
 {
 	public function __construct(string $class, string $key, string $template, int $code = 4001, \Throwable|null $previous = null)
 	{
-		$message = "Erreur dans la classe `$class`. Clé `$key` invalide pour le template `$template`." . (!is_null($previous) ? "Détails : " . $previous->getMessage() : '');
+		$message = "Error in class `$class`: The key `$key` is invalid for template `$template`." . (!is_null($previous) ? " Details: " . $previous->getMessage() : '');
 		parent::__construct($message, $code, $previous);
 	}
 }

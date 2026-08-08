@@ -14,7 +14,8 @@
         "stub",
         "stub generation",
         "stub generator",
-        "template"
+        "template",
+        "dev"
     ],
     "autoload": {
         "psr-4": {
@@ -32,5 +33,11 @@
     ],
     "require": {
         "php": "^8.1" 
+    },
+    "archive": {
+        "exclude": [
+            "/docs",
+            "mkdocs.yml"
+        ]
     }
 }

@@ -3,6 +3,8 @@
 namespace Crafteus\Environment;
 
 use Crafteus\Exceptions\FoundationAlreadyExistsException;
+use Crafteus\Support\Helper;
+use stdClass;
 
 class App
 {
@@ -15,7 +17,7 @@ class App
 	/**
 	 * @var array<Foundation> $foundations Array holding all the created foundations, keyed by their names.
 	 */
-	public array $foundations = [];
+	protected array $foundations = [];
 
 	/**
 	 * Constructor for the App class.
@@ -32,13 +34,13 @@ class App
 	 * Creates and registers multiple foundations.
 	 * 
 	 * @param string $ecosystem The ecosystem class name.
-	 * @param array $data An array of foundation data. Each entry should have the foundation name as the key, and the associated data as the value.
+	 * @param array $options An array of foundation options. Each entry should have the foundation name as the key, and the associated options as the value.
 	 * @param array $templates_config Additional configuration for templates. Optional.
 	 * @return self Returns the current instance for method chaining.
 	 */
-	public function make(string $ecosystem, array $data, array $templates_config = []) : App{
+	public function make(string $ecosystem, array $options, array $templates_config = []) : self {
 
-		foreach ($data as $name => $value) {
+		foreach ($options as $name => $value) {
 
 			if(is_string($value)){
 				$name = $value;
@@ -46,8 +48,8 @@ class App
 			}
 
 			$this->addFoundation(
-				$ecosystem,
 				$name,
+				$ecosystem,
 				$value['data'] ?? [],
 				array_merge(
 					$templates_config,
@@ -61,16 +63,16 @@ class App
 	}
 
 	/**
-	 * Adds a new foundation to the `foundations` array.
+	 * Adds a new foundation.
 	 * 
-	 * @param string $ecosystem The ecosystem name or type.
 	 * @param string|int $name The name of the foundation.
+	 * @param string $ecosystem The ecosystem name or type.
 	 * @param array $data Data associated with the foundation.
 	 * @param array $templates_config Template configuration for the foundation.
 	 * @throws FoundationAlreadyExistsException If a foundation with the same name already exists.
 	 * @return self Returns the current instance for method chaining.
 	 */
-	private function addFoundation(string $ecosystem, string|int $name, array $data, array $templates_config) {
+	public function addFoundation(string|int $name, string $ecosystem, array $data = [], array $templates_config = []) : self {
 
 		if(isset($this->foundations[$name]))
 			throw new FoundationAlreadyExistsException($name, 2100);
@@ -113,10 +115,7 @@ class App
 	 */
 	public function getFoundation(string|int $name) : Foundation|null {
 
-		return isset($this->foundations[$name])
-			? $this->foundations[$name]
-			: null
-		;
+		return $this->foundations[$name] ?? null;
 
 	}
 
@@ -142,26 +141,68 @@ class App
 	 */
 	public function generate(bool $reinit_stub = false) : array {
 
-		return array_map(
-			fn($foundation) => $foundation->generateEcosystem(reinit_stub: $reinit_stub),
+		$error = (object) ['status' => false];
+
+		$result = array_map(
+			function($foundation) use ($error, $reinit_stub) {return array_map(
+				function($value) use ($error) {
+					if(is_array($value) && isset($value['not_generated']) && !empty($value['not_generated'])){
+						array_map(
+							function(Stub $stub) use ($error){
+								if($stub->errorExists()){
+									$error->status = true;
+								}
+							},
+							$value['not_generated']
+						);
+					}
+
+					return $value;
+				},
+				$foundation->generateEcosystem(reinit_stub: $reinit_stub)
+			); },
 			$this->foundations
 		);
+
+		if($error->status){
+
+			$this->cancelGenerated(true);
+
+		}
+
+		return $result;
 
 	}
 
 	/**
 	 * Cancel all generate templates on the ecosystem.
 	 *
-	 * @return array Returns generate results of all foundations
+	 * @param bool $dueToError
+	 * @return void
 	 * 
 	 */
-	public function cancelGenerated() : void {
+	public function cancelGenerated(bool $dueToError = false) : void {
 
 		array_map(
-			fn($foundation) => $foundation->cancelGeneratedEcosystem(), 
+			fn($foundation) => $foundation->cancelGeneratedEcosystem($dueToError), 
 			$this->foundations
 		);
 
+	}
+
+	/**
+	 * Removes a foundation from the collection by its name or identifier.
+	 *
+	 * @param string|int $name The foundation name or identifier.
+	 * 
+	 * @return self
+	 * 
+	 */
+	public function removeFoundation(string|int $name) : self {
+
+		unset($this->foundations[$name]);
+
+		return $this;
 	}
 
 }
