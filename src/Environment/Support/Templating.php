@@ -159,7 +159,7 @@ class Templating
 	 * 
 	 */
 	public function applyContent() : bool {
-		return $this->stub->setCurrentContent($this->getCurrentContent())->generateContentFile();
+		return $this->stub->setCurrentContent($this->getCurrentContent())->applyContentFile();
 	}
 
 	/**
