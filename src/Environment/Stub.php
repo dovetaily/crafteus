@@ -5,6 +5,7 @@ namespace Crafteus\Environment;
 use Crafteus\Crafteus;
 use Crafteus\Environment\Support\Templating;
 use Crafteus\Exceptions\BaseErrorException;
+use Crafteus\Exceptions\BaseException;
 use Crafteus\Exceptions\DirectoryCreationException;
 use Crafteus\Exceptions\FileDeletionException;
 use Crafteus\Exceptions\FileGenerationException;
@@ -13,6 +14,7 @@ use Crafteus\Exceptions\PermissionDeniedException;
 use Crafteus\Exceptions\PhpStubException;
 use SplFileInfo;
 use Crafteus\Support\Helper;
+use Exception;
 
 class Stub extends SplFileInfo
 {
@@ -191,11 +193,11 @@ class Stub extends SplFileInfo
 	 *
 	 * @param \Throwable|string $err The error to add.
 	 * 
-	 * @return Stub
+	 * @return self
 	 * @throws \Throwable If the provided error is an exception, it is thrown immediately.
 	 * 
 	 */
-	private function addErrors(\Throwable|string $err) : Stub {
+	private function addErrors(\Throwable|string $err) : self {
 
 		$this->errors[] = $err;
 
@@ -252,10 +254,10 @@ class Stub extends SplFileInfo
 	 *
 	 * @param string|null|\Closure $templating
 	 * 
-	 * @return Stub
+	 * @return self
 	 * 
 	 */
-	public function setTemplating(string|null|\Closure $templating) : Stub {
+	public function setTemplating(string|null|\Closure $templating) : self {
 		$this->templating = $templating;
 		return $this;
 	}
@@ -287,7 +289,21 @@ class Stub extends SplFileInfo
 	 * 
 	 */
 	public function getStubContent() : string {
-		return in_array($this->getOriginType(), ['file', 'url']) ? file_get_contents($this->getOriginStub()) : $this->getOriginStub();
+
+		set_error_handler(
+			fn($severity, $message, $file, $line) => $this->addErrors(new BaseException(
+				"Failed to load stub from `" . $this->getOriginStub() . "`.",
+				code:5504,
+				previous: new BaseErrorException(BaseException::class, $message, 5504)
+			)),
+			E_WARNING
+		);
+
+		$result = in_array($this->getOriginType(), ['file', 'url']) ? file_get_contents($this->getOriginStub()) : $this->getOriginStub();
+
+		restore_error_handler();
+
+		return $result;
 
 	}
 
@@ -324,13 +340,35 @@ class Stub extends SplFileInfo
 	 *
 	 * @param string|null $content
 	 * 
-	 * @return Stub
+	 * @return self
 	 * 
 	 */
-	public function setCurrentContent(string|null $content = null) : Stub {
-		if(Crafteus::$disable_file_writing) $this->deferred_content = $content;
+	public function setCurrentContent(string|null $content = null) : self {
+		if(Crafteus::$disable_file_writing) $this->setDeferredContent($content);
 		$this->current_content = $content;
 		return $this;
+	}
+
+	/**
+	 * Appends content to the current content.
+	 * 
+	 * @param string|null $content The content to append.
+	 * @param bool $inline If `true`, the content is appended without inserting a line break first.
+	 * 
+	 * @return self
+	 * 
+	 */
+	public function addCurrentContent(string $content, bool $inline = false) : self {
+
+		if(Crafteus::$disable_file_writing) $this->addDeferredContent($content);
+
+		if(is_string($this->current_content) && $this->current_content !== "")
+			$this->current_content .= ($inline ? "" : PHP_EOL) . $content;
+		else
+			$this->setCurrentContent($content);
+
+		return $this;
+
 	}
 
 	/**
@@ -340,7 +378,27 @@ class Stub extends SplFileInfo
 	 * 
 	 */
 	public function getCurrentContent() : ?string {
-		return Crafteus::$disable_file_writing ? $this->deferred_content : $this->current_content;
+		return Crafteus::$disable_file_writing ? $this->getDeferredContent() : $this->current_content;
+	}
+
+	public function setDeferredContent(string|null $content) : self {
+		$this->deferred_content = $content;
+
+		return $this;
+	}
+
+	public function addDeferredContent(string $content, bool $inline = false) : self {
+
+		if(is_string($this->deferred_content) && $this->deferred_content !== "")
+			$this->deferred_content .= ($inline ? "" : PHP_EOL) . $content;
+		else
+			$this->setDeferredContent($content);
+
+		return $this;
+	}
+
+	public function getDeferredContent() : ?string {
+		return $this->deferred_content;
 	}
 
 	/**
@@ -371,7 +429,7 @@ class Stub extends SplFileInfo
 	 * @param string|null $key
 	 * @param mixed $default_value
 	 * 
-	 * @return array|null
+	 * @return mixed
 	 * 
 	 */
 	public function getData(string|null $key = null, $default_value = null) {
@@ -449,11 +507,22 @@ class Stub extends SplFileInfo
 	 *
 	 * @return bool
 	 * 
+	 * @deprecated use `applyContentWithTemplating` method.
 	 */
 	public function generateContentWithTemplating() : bool {
+		return $this->applyContentWithTemplating();
+	}
+
+	/**
+	 * Apply content using the templating mechanism.
+	 *
+	 * @return bool
+	 * 
+	 */
+	public function applyContentWithTemplating() : bool {
 		$result = false;
 		$templating = $this->getTemplating();
-		if(class_exists($templating) || is_callable($templating)){
+		if((is_string($templating) && class_exists($templating)) || is_callable($templating)){
 			if(is_string($templating) && class_exists($templating)){
 				$_templating = $this->getTemplatingInstance();
 				if(method_exists($_templating, 'run'))
@@ -469,10 +538,11 @@ class Stub extends SplFileInfo
 				$result = true;
 			}
 		}
-		else if(method_exists($this->template, $m = 'templating')){
-			$res = $this->template->$m(...[$this]);
+		else if(method_exists($this->getTemplate(), $m = 'templating')){
+			$res = $this->getTemplate()->$m(...[$this]);
 			if(is_array($res))
 				$this->setLastTemplating($res);
+			$result = true;
 		}
 		return $result;
 	}
@@ -484,11 +554,25 @@ class Stub extends SplFileInfo
 	 * 
 	 * @return bool
 	 * 
+	 * @deprecated Deprecated at v1.0.1, use `applyContentFile` method.
+	 * 
 	 */
 	public function generateContentFile(?string $content = null) : bool {
+		return $this->applyContentFile($content);
+	}
+
+	/**
+	 * Apply the stub file content.
+	 *
+	 * @param string|null $content
+	 * 
+	 * @return bool
+	 * 
+	 */
+	public function applyContentFile(?string $content = null) : bool {
 		if($this->isWritable()){
 			if(Crafteus::$disable_file_writing)
-				$this->deferred_content = $content ?? $this->getCurrentContent();
+				$this->setDeferredContent($content ?? $this->getCurrentContent());
 			else
 				file_put_contents($this->getFilePath(), $content ?? $this->getCurrentContent());
 			return true;
@@ -533,7 +617,7 @@ class Stub extends SplFileInfo
 	 * 
 	 */
 	public function generateFile(bool $force = true, bool $is_generated = true) : bool {
-		if($this->state_generate && !$this->already_exists || ($this->already_exists && $force)){
+		if($this->state_generate && (!$this->already_exists || ($this->already_exists && $force))){
 			// Helper::dd($this->getStubFilePath(), $this->getFilePath(), $this->getCurrentContent());
 
 			$this->makePathDirectory();
@@ -549,13 +633,15 @@ class Stub extends SplFileInfo
 
 			if($this->getOriginType() === 'file'){
 				if(Crafteus::$disable_file_writing)
-					$this->deferred_content = file_get_contents($this->getOriginStub());
+					$this->setDeferredContent(
+						file_get_contents($this->getOriginStub())
+					);
 				else copy($this->getOriginStub(), $this->getFilePath());
 			}
 			else{
 
 				if(Crafteus::$disable_file_writing)
-					$this->deferred_content = $this->getStubContent();
+					$this->setDeferredContent($this->getStubContent());
 				else file_put_contents($this->getFilePath(), $this->getStubContent());
 			}
 
@@ -563,10 +649,16 @@ class Stub extends SplFileInfo
 
 			$this->is_generated = $is_generated;
 			
-			$this->generateContentFile();
+			$this->applyContentFile();
 
 			return true;
 		}
+		elseif($this->state_generate && $this->already_exists){
+
+			$this->addErrors(new Exception("File already exists : `" . $this->getFilePath() . "`"));
+
+		}
+
 		return false;
 		
 	}
@@ -585,7 +677,7 @@ class Stub extends SplFileInfo
 				include $stub->getOriginStub();
 				return ob_get_clean();
 			})($this->getData(), $this);
-			$this->setCurrentContent($c)->generateContentFile();
+			$this->setCurrentContent($c)->applyContentFile();
 		} catch (\Throwable $th) {
 			$this->addErrors(new PhpStubException(
 				$this->getOriginStub(),
@@ -665,9 +757,20 @@ class Stub extends SplFileInfo
 	 *
 	 * @return bool
 	 * 
+	 * @deprecated use `cancelContentApply` method.
 	 */
 	public function cancelGenerateContent() : bool {
-		return $this->generateContentFile($this->getOldContent());
+		return $this->cancelContentApply();
+	}
+
+	/**
+	 * Cancels the content applied in file.
+	 *
+	 * @return bool
+	 * 
+	 */
+	public function cancelContentApply() : bool {
+		return $this->applyContentFile($this->getOldContent());
 	}
 
 	/**

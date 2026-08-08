@@ -11,11 +11,9 @@ class CompliantArray
 
 	public array $rules = [];
 
-	public array $default_data;
+	public array|\Closure $default_data;
 
 	public array $data;
-
-	protected array $errors = [];
 
 	/**
 	 * [Description for __construct]
@@ -25,7 +23,7 @@ class CompliantArray
 	 * @param array|callable $default_data
 	 * 
 	 */
-	public function __construct(array $rules, array $data, array|callable $default_data = [])
+	public function __construct(array $rules, array $data, array|callable|\Closure $default_data = [])
 	{
 		$this->rules = $rules;
 		$this->data = $data;
@@ -103,7 +101,7 @@ class CompliantArray
 			$result = $default_data(...['data' => $this->data]);
 			if(is_array($result))
 				$default_data = $result;
-			return $default_data;
+			else $default_data = [];
 		}
 		return array_merge($default_data, $this->data);
 	}

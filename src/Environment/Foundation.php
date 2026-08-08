@@ -11,9 +11,9 @@ class Foundation
 	/**
 	 * Instance of the main application.
 	 *
-	 * @var App
+	 * @var App|null
 	 */
-	public App $app;
+	public ?App $app = null;
 
 	/**
 	 * Name of the foundation.
@@ -51,17 +51,24 @@ class Foundation
 	public array $data;
 
 	/**
+	 * Whether the ecosystem is clean.
+	 *
+	 * @var bool
+	 */
+	protected bool $ecosystem_is_clean = false;
+
+	/**
 	 * Foundation class constructor.
 	 * Initializes the properties and cleans the ecosystem.
 	 *
-	 * @param App $app Instance of the application.
+	 * @param App|null $app Instance of the application.
 	 * @param string $name Name of the foundation.
 	 * @param string $ecosystem Name of the ecosystem class.
 	 * @param array $data Data associated with the foundation.
 	 * @param array $templates_config Configuration of the ecosystem templates (optional).
 	 * 
 	 */
-	public function __construct(App $app, string|int $name, string $ecosystem, array $data, array $templates_config = []) {
+	public function __construct(?App $app, string|int $name, string $ecosystem, array $data = [], array $templates_config = []) {
 		$this->app = $app;
 		$this->name = $name;
 		$this->data = $data;
@@ -78,10 +85,15 @@ class Foundation
 	 * 
 	 */
 	public function cleanEcosystem() : void {
+
+		$this->ecosystem_is_clean = false;
+
 		$this->cleanTemplateEcosystem();
 		
 		if(method_exists($eco = $this->getEcosystemInstance(), 'afterFoundationCleanEcosystem'))
 			$eco->afterFoundationCleanEcosystem(...[$this]);
+
+		$this->ecosystem_is_clean = true;
 	}
 
 	/**
@@ -171,6 +183,8 @@ class Foundation
 	 */
 	public function generateEcosystem(bool $reinit_stub = false) : array {
 
+		if(!$this->ecosystem_is_clean) $this->cleanEcosystem();
+
 		return $this->getEcosystemInstance()->generateTemplates(reinit_stub: $reinit_stub);
 
 	}
@@ -178,12 +192,13 @@ class Foundation
 	/**
 	 * Cancels the generation of templates for this ecosystem.
 	 *
+	 * @param bool $dueToError
 	 * @return void
 	 * 
 	 */
-	public function cancelGeneratedEcosystem() : void {
+	public function cancelGeneratedEcosystem(bool $dueToError = false) : void {
 
-		$this->getEcosystemInstance()->cancelTemplatesGenerated();
+		$this->getEcosystemInstance()->cancelTemplatesGenerated($dueToError);
 
 	}
 
@@ -209,6 +224,16 @@ class Foundation
 
 		return $this->data;
 
+	}
+
+	/**
+	 * Get App object.
+	 *
+	 * @return App|null
+	 * 
+	 */
+	public function getApp() : App|null {
+		return $this->app;
 	}
 
 }

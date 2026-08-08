@@ -17,6 +17,65 @@ class AnonymousTemplate extends Template
 	 */
 	private \Closure|null $transform_basename = null;
 
+	public const UNAUTHORIZED_KEYS = [
+		"UNAUTHORIZED_KEYS",
+		"transform_basename",
+		"__construct",
+		"transformBasename",
+		"setTransformBasename",
+
+		// Template
+		"template_name", // private
+		"ecosystem",
+		"getBaseName",
+		"stubs",
+
+		"current_data", // protected
+		"unique_stub_config_properties",
+		"config_rule",
+		"data_rule",
+		"initData",
+		"setCurrentData",
+		"getPath",
+		"getExtension",
+		"getStubFile",
+		"getGenerate",
+		"getTemplating",
+		"generateStubContent",
+		"applyStubContent",
+
+		// "path", // public
+		// "extension",
+		// "stub_file",
+		// "generate",
+		// "templating",
+		"UNIQUE_STUB_CONFIG_PROPERTIES",
+		"getFoundationName",
+		"getData",
+		"compliantData",
+		"getEcosystem",
+		"setEcosystem",
+		"getTemplateName",
+		"setTemplateName",
+		"getUniqueConfig",
+		"getConfig",
+		"getUniqueStubConfigProperties",
+		"setUniqueStubConfigProperties",
+		"getConfigRule",
+		"getDataRule",
+		"setConfigRule",
+		"setDataRule",
+		"getRules",
+		"defaultRuleConfig",
+		"initStub",
+		"addStub",
+		"getStubs",
+		"getStub",
+		"generateStubFile",
+		"generateStubsFile",
+		"cancelStubsFilesGenerated",
+	];
+
 	/**
 	 * Constructs an AnonymousTemplate instance.
 	 * 
@@ -31,6 +90,8 @@ class AnonymousTemplate extends Template
 		error_reporting(E_ALL & ~E_DEPRECATED);
 
 		foreach ($args as $key => $value) {
+
+			if(in_array($key, self::UNAUTHORIZED_KEYS)) throw new \Exception("Unauthorized `" . $key . "` key name.", 1);
 
 			if(preg_match('/^[a-z_][a-z0-9_]+$/i', $key))
 				$this->{$key} = $value; // PHP Deprecated:  Creation of dynamic property

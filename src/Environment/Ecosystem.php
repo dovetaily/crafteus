@@ -15,6 +15,11 @@ use Crafteus\Exceptions\TemplateConfigException;
 use Crafteus\Exceptions\TemplateValidationException;
 use Crafteus\Support\Helper;
 
+/**
+ * @method void afterFoundationSet(\Crafteus\Environment\Foundation $foundation) Executes after the foundation has been set.
+ * @method void afterFoundationCleanEcosystem(\Crafteus\Environment\Foundation $foundation) Executes actions after the foundation has cleaned (reviewed and fixed) all ecosystem templates.
+ * @method void afterFoundationCleanTemplateEcosystem(\Crafteus\Environment\Template $template, \Crafteus\Environment\Foundation $foundation) Executes actions after the foundation has cleaned (reviewed and fixed) ecosystem template.
+ */
 class Ecosystem
 {
 
@@ -29,6 +34,7 @@ class Ecosystem
 	 * An array of validation rules for templates.
 	 *
 	 * @var array
+	 * @deprecated
 	 */
 	protected array $rules = [];
 
@@ -88,6 +94,8 @@ class Ecosystem
 	 *
 	 * @return array The validation rules.
 	 * 
+	 * @deprecated
+	 * 
 	 */
 	public function getRules() : array {
 
@@ -105,6 +113,9 @@ class Ecosystem
 	 * @throws InvalidTemplateException If the template is invalid.
 	 * @throws InvalidTemplateTypeException If the template type is incorrect.
 	 * @throws DuplicateTemplateInstanceException If an instance of the template already exists.
+	 * @throws TemplateConfigException If the property value's type in the template instance is incorrect.
+	 * @throws InvalidTemplatePropertyException
+	 * @throws MissingConfigKeyException
 	 * 
 	 */
 	public function getTemplateInstance(string|int $template_name, array $more_config = []) : Template|Bool {
@@ -113,21 +124,21 @@ class Ecosystem
 		else{
 			if($template = $this->getTemplate($template_name)){
 
-				$ins = null;
+				$template_instance = null;
 
 				if(is_string($template)){
 
 					if(class_exists($template) && is_subclass_of($template, Template::class)){
 
-						$ins = new $template;
+						$template_instance = new $template;
 
 						// update config start...
 
-						$origin_config = get_object_vars($ins);
+						$origin_config = get_object_vars($template_instance);
 						foreach ($more_config as $key => $value) {
 							if(array_key_exists($key, $origin_config) && $origin_config[$key] !== $value){
 								try {
-									$ins->$key = $value;
+									$template_instance->$key = $value;
 								} catch (\TypeError $th) {
 									throw new TemplateConfigException(
 										static::class,
@@ -139,23 +150,23 @@ class Ecosystem
 								}
 							}
 						}
-						if(method_exists($ins, 'afterConfigUpdated'))
-							$ins->afterConfigUpdated(...[$origin_config]); // old_config
+						if(method_exists($template_instance, 'afterConfigUpdated'))
+							$template_instance->afterConfigUpdated(...[$origin_config]); // old_config
 						// update config stop...
 
 						$this->compliantTemplateArray(
-							get_object_vars($ins), "Erreur Venant de la classe Ecosystem `" . static::class . "`, veuillez vérifier la validité des propriétés de la classe template `" . $template . "`.",
+							get_object_vars($template_instance), "Error in Ecosystem class `" . static::class . "`. Please check the validity of the properties in the template class `" . $template . "`.",
 							compliant_message: [
 								'required' => 'The class property `:name` is required',
 								'type' => 'The class property `:name` type is not available :available_type',
 								'empty' => 'The class property `:name` is empty',
 								'verify' => 'The class property `:name` has not available value',
 							],
-							template_rule : $ins->getConfigRule()
+							template_rule : $template_instance->getConfigRule()
 						);
 
-						$ins->setEcosystem($this);
-						$ins->setTemplateName($template_name);
+						$template_instance->setEcosystem($this);
+						$template_instance->setTemplateName($template_name);
 
 					}
 					else
@@ -188,23 +199,24 @@ class Ecosystem
 					);
 
 					try {
-						$ins = new AnonymousTemplate(...$template['config']);
+						$template_instance = new AnonymousTemplate(...$template['config']);
 					} catch (\Throwable $th) {
 						throw new InvalidTemplatePropertyException(
-							$template_name, 
+							$template_name,
+							AnonymousTemplate::UNAUTHORIZED_KEYS,
 							code : 4306,
 							previous: $th
 						);
 						
 					}
 
-					$ins
-						->setConfigRule($template['rules']['config'])
+					$template_instance
+						->setConfigRule($template['rules']['config'] ?? [])
 						->setEcosystem($this)
 						->setTemplateName($template_name)
 					;
 					if(isset($template['config']['transformBasename']) && is_callable($template['config']['transformBasename']))
-						$ins->setTransformBasename($template['config']['transformBasename']);
+						$template_instance->setTransformBasename($template['config']['transformBasename']);
 
 				}
 				else throw new InvalidTemplateTypeException(
@@ -213,10 +225,15 @@ class Ecosystem
 					code : 4304
 				);
 
-				if($ins){
-					if($this->addTemplateInstance($template_name, $ins)){
+				if($template_instance){
+					
+					// Validate Template Data
+					// $this->compliantTemplateData($template_instance);
+
+					if($this->addTemplateInstance($template_name, $template_instance)){
 						return $this->templates_instance[$template_name];
 					}
+
 					throw new DuplicateTemplateInstanceException(
 						$template_name,
 						static::class,
@@ -324,6 +341,20 @@ class Ecosystem
 		}
 
 	}
+	
+	/**
+	 * Checks the compliance of a template's data according to the defined rules.
+	 *
+	 * @param Template $template The template instance.
+	 * 
+	 * @return void
+	 * 
+	 */
+	private function compliantTemplateData(Template $template) : void {
+
+		$template->compliantData();
+
+	}
 
 	/**
 	 * Retrieves a template by its name.
@@ -353,10 +384,10 @@ class Ecosystem
 	 *
 	 * @param Foundation $foundation The foundation instance.
 	 * 
-	 * @return Ecosystem The instance of the ecosystem.
+	 * @return self The instance of the ecosystem.
 	 * 
 	 */
-	public function setFoundation(Foundation $foundation) : Ecosystem {
+	public function setFoundation(Foundation $foundation) : self {
 
 		$this->foundation = $foundation;
 		
@@ -411,22 +442,44 @@ class Ecosystem
 	 */
 	public function generateTemplates(bool $reinit_stub = false) : array {
 		$generated = [];
+
+		$error = false;
+
 		foreach ($this->templates_instance as $template_name => $template_instance) {
-			$generated[$template_name] = $this->generateTemplate(template : $template_instance, reinit_stub: $reinit_stub);
+
+			$result = $this->generateTemplate(template : $template_instance, reinit_stub: $reinit_stub);
+
+			if($result !== true) $error = true;
+
+			$generated[$template_name] = $result;
+
 		}
+
+		if($error)
+			$this->cancelTemplatesGenerated(true);
+
 		return $generated;
 	}
 
 	/**
 	 * Cancels the generation of stub files for all templates.
 	 *
+	 * @param bool $dueToError
 	 * @return void
 	 * 
 	 */
-	public function cancelTemplatesGenerated() : void {
-		foreach ($this->templates_instance as $template_name => $template_instance) {
-			$template_instance->cancelStubsFilesGenerated();
+	public function cancelTemplatesGenerated(bool $dueToError = false) : void {
+
+		if(!$dueToError || ($dueToError && $this->cancelAllOnError())){
+
+			foreach ($this->templates_instance as $template_name => $template_instance) {
+
+				$template_instance->cancelStubsFilesGenerated();
+
+			}
+
 		}
+
 	}
 
 	/**
@@ -490,9 +543,9 @@ class Ecosystem
 	 * 
 	 * @param array $data An array of foundation data. Each entry should have the foundation name as the key, and the associated data as the value.
 	 * @param array $templates_config Additional configuration for templates. Optional.
-	 * @return \App\Crafteus\Environment\App Returns the current instance for method chaining.
+	 * @return \Crafteus\Environment\App Returns the current instance for method chaining.
 	 */
-	public static function make(array $data, array $templates_config = []) : App{
+	public static function make(array $data, array $templates_config = []) : App {
 		return Crafteus::make(static::class, $data, $templates_config);
 	}
 }

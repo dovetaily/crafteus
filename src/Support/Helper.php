@@ -351,4 +351,36 @@ abstract class Helper
 		return $result_only ? $result : ['result' => $result, 'found' => $found];
 	}
 
+	/**
+	 * Get empty Stub file.
+	 * 
+	 * @param string $content Content of stub.
+	 * 
+	 * @return string
+	 */
+	public static function emptyStubFile(string $content = "") : string {
+		return $content;
+	}
+
+	/**
+	 * Checks whether a string looks like a file or directory path.
+	 *
+	 * @param string $text The string to check.
+	 *
+	 * @return bool True if the string looks like a path, otherwise false.
+	 */
+	public static function looksLikePath(string $text): bool {
+		return (bool) preg_match(
+			'#^(?:
+				[a-zA-Z]:[\\\\/]
+			| \\\\[^\\\\/]+[\\\\/][^\\\\/]+
+			| /
+			| \./
+			| \.\./
+			| ~(?:[\\\\/]|$)
+			)#x',
+			$text
+		);
+	}
+
 }
