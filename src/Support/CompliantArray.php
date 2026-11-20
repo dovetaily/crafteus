@@ -1,4 +1,5 @@
 <?php
+
 namespace Crafteus\Support;
 
 use Crafteus\Support\Rule;
@@ -21,7 +22,7 @@ class CompliantArray
 	 * @param array $rules
 	 * @param array $data
 	 * @param array|callable $default_data
-	 * 
+	 *
 	 */
 	public function __construct(array $rules, array $data, array|callable|\Closure $default_data = [])
 	{
@@ -30,7 +31,8 @@ class CompliantArray
 		$this->default_data = $default_data;
 	}
 
-	public function check(?string $prefix = null, ?array $message = []) {
+	public function check(?string $prefix = null, ?array $message = [])
+	{
 
 		$data = $this->getData();
 
@@ -38,20 +40,20 @@ class CompliantArray
 
 			$more_compliant = null;
 
-			if(isset($value['data'])){
+			if (isset($value['data'])) {
 				$more_compliant = $value['data'];
 				unset($value['data']);
 			}
-			
+
 			$more_keys_compliant = null;
-			
-			if(isset($value['keys'])){
+
+			if (isset($value['keys'])) {
 				$more_keys_compliant = $value['keys'];
 				unset($value['keys']);
 			}
 
 			$rule = new Rule(...['name' => $key, ...$value, 'message' => $message ?? []]);
-			
+
 			$this->rules[$key] = $rule;
 
 			$data_exist = array_key_exists($key, $data);
@@ -62,48 +64,49 @@ class CompliantArray
 
 			$key_error = (!is_null($prefix) ? $prefix . '.' : '') . $key;
 
-			if($rule->errorExists())
+			if ($rule->errorExists()) {
 				$this->addError($rule->getErrors(), $key_error);
 				// $this->errors[$key_error] = $rule->errors;
+			}
 
-			if(is_array($more_compliant) && !empty($more_compliant)){
+			if (is_array($more_compliant) && !empty($more_compliant)) {
 
 				$compliant = (new CompliantArray(
-					rules : $more_compliant,
-					data : $current_data ?? []
+					rules: $more_compliant,
+					data: $current_data ?? []
 				))->check($key_error);
 
 				$this->setErrors(array_merge($this->errors, $compliant->errors));
 				// $this->errors = array_merge($this->errors, $compliant->errors);
 
 			}
-			if(is_array($current_data) && is_array($more_keys_compliant) && !empty($more_keys_compliant)){
+			if (is_array($current_data) && is_array($more_keys_compliant) && !empty($more_keys_compliant)) {
 				foreach ($current_data as $key_ => $data) {
 
 					$compliant = (new CompliantArray(
-						rules : $more_keys_compliant,
-						data : is_array($data) ? $data : []
+						rules: $more_keys_compliant,
+						data: is_array($data) ? $data : []
 					))->check($key_error . '.' . (is_string($data) ? $data . '[is not array]' : $key_));
 
 					$this->setErrors(array_merge($this->errors, $compliant->errors));
-
 				}
-
 			}
-
 		}
 		return $this;
 	}
 
-	public function getData() : array {
+	public function getData(): array
+	{
 		$default_data = $this->default_data;
-		if(is_callable($default_data)){
+
+		if (is_callable($default_data)) {
 			$result = $default_data(...['data' => $this->data]);
-			if(is_array($result))
+
+			if (is_array($result))
 				$default_data = $result;
 			else $default_data = [];
 		}
+
 		return array_merge($default_data, $this->data);
 	}
-
 }
