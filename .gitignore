@@ -1,0 +1,21 @@
+# Composer
+/composer.lock
+/vendor/
+
+# IDEs
+/.idea/
+/.vscode/*.json
+!/.vscode/extension.json
+*.iml
+
+# Test artifacts
+.phpunit.result.cache
+
+# Local development
+/.phpunit-watcher.yml
+
+# Temporary files
+*.tmp
+
+# Mkdocs Build
+/site/

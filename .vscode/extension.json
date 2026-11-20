@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "EditorConfig.EditorConfig",
+    "SamuelHinchliffe.phpdoc-generator-2022",
+    "bmewburn.vscode-intelephense-client",
+    "SanderRonde.phpstan-vscode",
+    "shd101wyy.markdown-preview-enhanced",
+    "DEVSENSE.composer-php-vscode",
+    "redhat.vscode-yaml"
+  ]
+}

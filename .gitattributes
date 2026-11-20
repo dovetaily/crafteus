@@ -1,0 +1,8 @@
+/docs export-ignore
+/tests export-ignore
+/.github export-ignore
+/.vscode export-ignore
+mkdocs.yml export-ignore
+phpunit.xml export-ignore
+phpstan.neon export-ignore
+* text=auto eol=lf

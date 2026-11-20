@@ -1,0 +1,29 @@
+root = true
+
+[*.*]
+charset = utf-8
+end_of_line = lf
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.{php,md}]
+indent_style = tab
+
+[*.{json,lock,md,yaml,yml}]
+indent_size = 2
+
+
+# PHP
+[*.php]
+tab_width = 4
+indent_size = 4
+
+# Markdown
+[*.md]
+tab_width = 2
+indent_style = space
+
+# YAML & JSON & LOCK File
+[*.{yaml,yml,json,lock}]
+tab_width = 2
+indent_style = space
