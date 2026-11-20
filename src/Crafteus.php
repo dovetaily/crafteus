@@ -1,10 +1,11 @@
 <?php
+
 namespace Crafteus;
 
 use Crafteus\Environment\App;
 
 /**
- * @method static \Crafteus\Environment\App make(string $ecosystem, array $data, array $templates_config = []) Creates and registers multiple foundations.
+ * @phpstan-import-type TFoundationOptions from \Crafteus\Environment\Foundation
  */
 class Crafteus
 {
@@ -18,54 +19,71 @@ class Crafteus
 
 	/**
 	 * Determines whether file writing and creation are disabled.
-	 * 
-	 * When set to `true`, the class prevents any file creation 
+	 *
+	 * When set to `true`, the class prevents any file creation
 	 * or modification in the system.
-	 * 
+	 *
 	 * @var bool $disable_file_writing
 	 */
 	public static bool $disable_file_writing = false;
+	/**
+	 * Determines the base path used to resolve relative file paths.
+	 *
+	 * Accepted values:
+	 * - 'vendor': Uses the vendor directory.
+	 * - 'getcwd': Uses the current working directory.
+	 * - string: Uses the specified project root path.
+	 *
+	 * @var 'vendor'|'getcwd'|string
+	 */
+	public static string $relative_path_with = 'getcwd';
 
 	/**
-	 * Used to deduce the relative path of the files.
+	 * Creates and registers multiple foundations.
 	 *
-	 * @var string
+	 * @template KE of \Crafteus\Environment\Ecosystem
+	 *
+	 * @param class-string<KE> $ecosystem
+	 * @param TFoundationOptions $foundation_options
+	 * @param array $templates_config
+	 *
+	 * @return \Crafteus\Environment\App<KE>
+	 *
 	 */
-	public static string $relative_path_with = 'vendor'; // values : 'vendor', 'getcwd' or 'your base relative path'
-	
-	public static function __callStatic($method, $arguments)
-	{
+	public static function make(
+		string $ecosystem,
+		array $foundation_options,
+		array $templates_config = []
+	): App {
+
 		$instance = new App();
 
-		return $instance->$method(...$arguments);
-		// if(method_exists($instance, $method))
-		// 	return $instance->$method(...$arguments);
-		// else throw new \Error("Call to undefined method Crafteus\Environment\App::" . $method . "()", 1);
-		
+		return $instance->make($ecosystem, $foundation_options, $templates_config);
 	}
 
 	/**
 	 * Disables file writing and creation.
 	 *
-	 * Sets the `$disable_file_writing` property to `true`, preventing 
+	 * Sets the `$disable_file_writing` property to `true`, preventing
 	 * any file creation or modification within the system.
 	 *
 	 * @return void
 	 */
-	public static function disableFileWriting() : void {
+	public static function disableFileWriting(): void
+	{
 		self::$disable_file_writing = true;
 	}
 
 	/**
 	 * Enables file writing and creation.
 	 *
-	 * Sets the `$disable_file_writing` property to `false`, allowing 
+	 * Sets the `$disable_file_writing` property to `false`, allowing
 	 * file creation and modification within the system.
 	 *
 	 * @return void
 	 */
-	public static function enableFileWriting() : void {
+	public static function enableFileWriting(): void
+	{
 		self::$disable_file_writing = false;
 	}
-
 }
