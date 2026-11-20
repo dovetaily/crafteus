@@ -5,23 +5,28 @@ namespace Crafteus\Environment\Support;
 use Crafteus\Environment\Template;
 
 /**
+ * @phpstan-import-type TTemplateTransformBasename from \Crafteus\Environment\Template
+ *
  * @method void afterConfigUpdated(array $new_config, array $old_config, array $template) Executes after the initial configuration is updated, which initializes the template.
+ *
+ * @template T_Ecosystem of \Crafteus\Environment\Ecosystem
+ * @template T_Templating of \Crafteus\Environment\Support\Templating|\Crafteus\Contracts\TemplatingInterface
+ *
+ * @extends \Crafteus\Environment\Template<T_Ecosystem,T_Templating>
  */
 class AnonymousTemplate extends Template
 {
-
 	/**
 	 * Closure to dynamically determine the file name.
 	 *
-	 * @var \Closure|null
+	 * @var TTemplateTransformBasename|null
 	 */
-	private \Closure|null $transform_basename = null;
+	protected \Closure|null $transform_basename = null;
 
 	public const UNAUTHORIZED_KEYS = [
 		"UNAUTHORIZED_KEYS",
 		"transform_basename",
 		"__construct",
-		"transformBasename",
 		"setTransformBasename",
 
 		// Template
@@ -41,7 +46,6 @@ class AnonymousTemplate extends Template
 		"getStubFile",
 		"getGenerate",
 		"getTemplating",
-		"generateStubContent",
 		"applyStubContent",
 
 		// "path", // public
@@ -67,75 +71,82 @@ class AnonymousTemplate extends Template
 		"setDataRule",
 		"getRules",
 		"defaultRuleConfig",
-		"initStub",
+		"initStubs",
 		"addStub",
 		"getStubs",
 		"getStub",
 		"generateStubFile",
 		"generateStubsFile",
 		"cancelStubsFilesGenerated",
+
+		"afterConfigurationChanged",
+		"beforeInitialize",
+		"afterInitialize",
+
+		"beforeGenerate",
+		"afterGenerateSuccessfully",
+		"afterGenerateFailed",
+		"afterGenerate",
 	];
 
 	/**
 	 * Constructs an AnonymousTemplate instance.
-	 * 
+	 *
 	 * This constructor allows dynamic property assignment based on the provided arguments.
 	 * Note: The use of dynamic properties is deprecated in PHP 8.2+.
 	 *
 	 * @param mixed ...$args Key-value pairs to dynamically assign properties.
-	 * 
+	 *
 	 */
-	public function __construct(...$args) {
-
+	public function __construct(...$args)
+	{
 		error_reporting(E_ALL & ~E_DEPRECATED);
 
 		foreach ($args as $key => $value) {
 
-			if(in_array($key, self::UNAUTHORIZED_KEYS)) throw new \Exception("Unauthorized `" . $key . "` key name.", 1);
+			if ($key == "transformBasename") continue;
 
-			if(preg_match('/^[a-z_][a-z0-9_]+$/i', $key))
-				$this->{$key} = $value; // PHP Deprecated:  Creation of dynamic property
+			if (in_array($key, self::UNAUTHORIZED_KEYS)) throw new \Exception("Unauthorized `" . $key . "` key name.", 1);
 
+			if (preg_match('/^[a-z_][a-z0-9_]+$/i', $key)) {
+				// PHP Deprecated:  Creation of dynamic property
+				$this->{$key} = $value;
+			}
 		}
 
 		error_reporting(E_ALL);
-
 	}
-	
+
 	/**
 	 * Retrieves the file name for the template.
-	 * 
+	 *
 	 * If no closure is set, it returns an array containing the foundation name.
 	 * Otherwise, it executes the closure to determine the file name dynamically.
 	 *
-	 * @param string|int|null|null $key_path An optional key used in file name generation.
-	 * 
+	 * @param string|int $key_path An key used in file name generation.
+	 *
 	 * @return array|string The determined file(s) name.
-	 * 
+	 *
 	 */
-	public function transformBasename(string|int|null $key_path = null) : array|string {
-
+	public function transformBasename(string|int $key_path): array|string
+	{
 		$foundation_name = $this->getFoundationName();
 
-		return is_null($this->transform_basename) 
+		return is_null($this->transform_basename)
 			? [$foundation_name]
-			: ($this->transform_basename)($key_path, $this)
-		;
-
+			: ($this->transform_basename)($key_path, $this);
 	}
 
 	/**
 	 * Sets the closure used to determine the file name dynamically.
 	 *
-	 * @param \Closure|null $closure A closure that defines the logic for generating file names.
-	 * 
+	 * @param TTemplateTransformBasename|null $closure A closure that defines the logic for generating file names.
+	 *
 	 * @return void
-	 * 
+	 *
 	 */
-	public function setTransformBasename(\Closure|null $closure) : void {
-
+	public function setTransformBasename(\Closure|null $closure): void
+	{
 		$this->transform_basename = $closure;
-
 	}
-
 }
