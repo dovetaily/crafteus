@@ -21,4 +21,9 @@
 # Mkdocs Build
 /site/
 
+/node_modules/
 docs/**/cache
+dist
+build
+*.log
+*.tgz

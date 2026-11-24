@@ -6,7 +6,7 @@ end_of_line = lf
 trim_trailing_whitespace = true
 insert_final_newline = true
 
-[*.{php,md}]
+[*.{php,md,html,css,js,jsx,mjs,cjs,ts,tsx,mts,cts,vue,scss,sass,less,styl}]
 indent_style = tab
 
 [*.{json,lock,md,yaml,yml}]
@@ -14,16 +14,14 @@ indent_size = 2
 
 
 # PHP
-[*.php]
+[*.{php,html,js,jsx,mjs,cjs,ts,tsx,mts,cts,vue,scss,sass,less,styl}]
 tab_width = 4
 indent_size = 4
 
-# Markdown
-[*.md]
+# YAML & JSON & LOCK File & Markdown & CSS
+[*.{yaml,yml,json,lock,md,css}]
 tab_width = 2
-indent_style = space
 
 # YAML & JSON & LOCK File
 [*.{yaml,yml,json,lock}]
-tab_width = 2
 indent_style = space
