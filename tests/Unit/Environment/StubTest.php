@@ -12,12 +12,14 @@ use Crafteus\Environment\Support\Templating;
 use Crafteus\Environment\Template;
 use Crafteus\Exceptions\BaseException;
 use Crafteus\Exceptions\EcosystemMissingMethodException;
+use Crafteus\Exceptions\FileLoadStubException;
 use Crafteus\Exceptions\InvalidStubDefinitionException;
 use Crafteus\Exceptions\InvalidTemplateDataException;
 use Crafteus\Exceptions\StubAlreadyExistsException;
 use Crafteus\Exceptions\TemplateNotRecognizedException;
 use Crafteus\Exceptions\TemplateValidationException;
 use Crafteus\Exceptions\UnableToResolveTemplateBasenameException;
+use Crafteus\Exceptions\UrlLoadStubException;
 use Crafteus\Support\Helper;
 use Crafteus\Support\Mock;
 use Crafteus\Support\MockEcosystem;
@@ -37,6 +39,7 @@ final class StubTest extends TestCase
 	protected array $methods_require_temp_files = [
 		'test_get_stub_content',
 		'test_get_stub_content_base_exception_no_such_file_or_directory',
+		'test_get_stub_with_file_load_stub_exception',
 		'test_make_path_directory',
 		'test_delete_file',
 		'test_php_stub',
@@ -111,7 +114,7 @@ final class StubTest extends TestCase
 		$this->assertEquals('content', $stub->getOriginType());
 		$this->assertEquals("@content", $stub->getStubContent());
 
-		$stub = $this->getStub(["stub" => 'http://localhost:8082/url.stub']);
+		$stub = $this->getStub(["stub" => 'https://httpbin.org/base64/e3t1cmwtY29udGVudH19']);
 		$this->assertEquals('url', $stub->getOriginType());
 		$this->assertEquals('{{url-content}}', $stub->getStubContent());
 
@@ -121,12 +124,11 @@ final class StubTest extends TestCase
 		$this->assertEquals('{{content}}', $stub->getStubContent());
 	}
 
-	public function test_get_stub_content_base_exception_no_such_file_or_directory(): void
+	public function test_get_stub_with_file_load_stub_exception(): void
 	{
-
-		$this->expectException(BaseException::class);
-		$this->expectExceptionCode(5504);
-		$this->expectExceptionMessageMatches('/Failed to open stream: No such file or directory[\s]*$/i');
+		$this->expectException(FileLoadStubException::class);
+		$this->expectExceptionCode(5506);
+		$this->expectExceptionMessageMatches('/No such file or directory/i');
 
 		$stub_file = $this->mock()->templateStubFile();
 		$stub = $this->getStub(["stub" => $stub_file]);
@@ -137,25 +139,27 @@ final class StubTest extends TestCase
 		$stub->getStubContent();
 	}
 
-	public function test_get_stub_content_base_exception_request_failed_404(): void
+	public function test_get_stub_content_with_url_load_stub_exception(): void
 	{
-		$this->expectException(BaseException::class);
-		$this->expectExceptionCode(5504);
-		$this->expectExceptionMessageMatches('/404 Not Found[\s]*$/i');
+		$this->expectException(UrlLoadStubException::class);
+		$this->expectExceptionCode(5505);
+		$this->expectExceptionMessageMatches('/404 Not Found/i');
 
-		$stub_url = 'http://localhost:8082/url-not-exists.stub';
+		$stub_url = 'https://httpbin.org/status/404';
 		$stub = $this->getStub(["stub" => $stub_url]);
 
 		$this->assertEquals('url', $stub->getOriginType());
 
-		self::catchIfMessageContains(
-			function () use ($stub) {
-				Helper::dump('--');
-				$stub->getStubContent();
-			},
-			'Failed to open stream',
-			'lorem ipsum'
-		);
+		$stub->getStubContent();
+
+		// self::catchIfMessageContains(
+		// 	function () use ($stub) {
+		// 		Helper::dump('--');
+		// 		$stub->getStubContent();
+		// 	},
+		// 	'Failed to open stream',
+		// 	'lorem ipsum'
+		// );
 	}
 
 	/**
@@ -165,8 +169,11 @@ final class StubTest extends TestCase
 	 * @param string $searchText
 	 * @param string|\Closure(\Throwable):\Throwable|null $error
 	 */
-	public static function catchIfMessageContains(\Closure $call, string $searchText, string|\Closure|null $error = null): void
-	{
+	public static function catchIfMessageContains(
+		\Closure $call,
+		string $searchText,
+		string|\Closure|null $error = null
+	): void {
 		try {
 			$call();
 		} catch (\Throwable $th) {
@@ -181,9 +188,8 @@ final class StubTest extends TestCase
 
 	public function test_get_stub_content_base_exception_unknown_host(): void
 	{
-
-		$this->expectException(BaseException::class);
-		$this->expectExceptionCode(5504);
+		$this->expectException(UrlLoadStubException::class);
+		$this->expectExceptionCode(5505);
 		$this->expectExceptionMessageMatches('/file_get_contents\\(\\)\\: php_network_getaddresses\\: getaddrinfo/i');
 
 		$stub_url = 'http://www.domain-not-exists-e8he2ne2-e28e28ne2-e82n.com';
