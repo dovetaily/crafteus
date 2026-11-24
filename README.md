@@ -47,14 +47,14 @@ class MyEcosystem extends Ecosystem
 
 ##### Configuration Keys
 
-1. **`path`** (Required)  
-	- **Type:** `string` | `array<string>`  
-	- **Description:** Specifies the path(s) where the generated file(s) will be created.  
-		- Example (Single Path):  
+1. **`path`** (Required)
+	- **Type:** `string` | `array<string>`
+	- **Description:** Specifies the path(s) where the generated file(s) will be created.
+		- Example (Single Path):
 			```php
 			'path' => __DIR__ . "/your-path/folder"
 			```
-		- Example (Multiple Paths):  
+		- Example (Multiple Paths):
 			```php
 			'path' => [
 				'key_path1' => __DIR__ . "/path1",
@@ -63,14 +63,14 @@ class MyEcosystem extends Ecosystem
 			```
 	- **Note:** If multiple paths are provided in `path`, you can make them match with the other configuration keys (extension, stub_file, ...) otherwise the multiple paths will take the first existing configuration key.
 
-2. **`extension`** (Required)  
-	- **Type:** `string` | `array<string>`  
-	- **Description:** Defines the file extension for the generated file(s).  
-		- Example (Single Extension):  
+2. **`extension`** (Required)
+	- **Type:** `string` | `array<string>`
+	- **Description:** Defines the file extension for the generated file(s).
+		- Example (Single Extension):
 			```php
 			'extension' => 'php'
 			```
-		- Example (Multiple Extensions):  
+		- Example (Multiple Extensions):
 			```php
 			'extension' => [
 				'key_path1' => 'php',
@@ -78,14 +78,14 @@ class MyEcosystem extends Ecosystem
 			]
 			```
 
-3. **`stub_file`** (Required)  
-	- **Type:** `string` | `array<string>`  
-	- **Description:** Indicates the absolute path(s) to the stub file(s) used as a template. Stub files define the structure/content of the generated file(s).  
-		- Example:  
+3. **`stub_file`** (Required)
+	- **Type:** `string` | `array<string>`
+	- **Description:** Indicates the absolute path(s) to the stub file(s) used as a template. Stub files define the structure/content of the generated file(s).
+		- Example:
 			```php
 			'stub_file' => __DIR__ . "/../file.stub"
 			```
-		- Example (Multiple Extensions):  
+		- Example (Multiple Extensions):
 			```php
 			'stub_file' => [
 				'key_path1' => __DIR__ . "/../file1.stub",
@@ -93,10 +93,10 @@ class MyEcosystem extends Ecosystem
 			]
 			```
 
-4. **`generate`** (Required)  
-	- **Type:** `bool` | `array<bool>`  
-	- **Description:** Determines whether the file(s) should be generated. If `false`, no file will be created.  
-		- Example:  
+4. **`generate`** (Required)
+	- **Type:** `bool` | `array<bool>`
+	- **Description:** Determines whether the file(s) should be generated. If `false`, no file will be created.
+		- Example:
 			```php
 			'generate' => true
 			```
@@ -108,10 +108,10 @@ class MyEcosystem extends Ecosystem
 			]
 			```
 
-5. **`templating`** (Optional)  
-	- **Type:** `string` | `\Closure` | `array<string,\Closure>`  
-	- **Description:** Specifies custom logic for templating. You can use a closure or reference a class to manipulate the stub's content dynamically.  
-		- Example (Closure):  
+5. **`templating`** (Optional)
+	- **Type:** `string` | `\Closure` | `array<string,\Closure>`
+	- **Description:** Specifies custom logic for templating. You can use a closure or reference a class to manipulate the stub's content dynamically.
+		- Example (Closure):
 			```php
 			'templating' => function (\Crafteus\Environment\Stub $stub) {
 					$stub->getData(); // Data sent to the ecosystem
@@ -119,7 +119,7 @@ class MyEcosystem extends Ecosystem
 					$stub->setCurrentContent(string|null $content); // Sets the current content of the stub.
 			}
 			```
-		- Example (Class):  
+		- Example (Class):
 			```php
 			'templating' => MyTemplating::class // In advance usage
 			```
@@ -132,15 +132,15 @@ class MyEcosystem extends Ecosystem
 			```
 
 
-#### Usage of Ecosystem  
+#### Usage of Ecosystem
 
-##### **1. Building Your Crafteus Application**  
+##### **1. Building Your Crafteus Application**
 
-You can initialize a **Crafteus** instance using the `make()` method, which accepts the following parameters:  
+You can initialize a **Crafteus** instance using the `make()` method, which accepts the following parameters:
 
-- **`ecosystem`** *(string)*: The class of your ecosystem.  
-- **`data`** *(array)*: The data to be injected into the ecosystem.  
-- **`templates_config`** *(array, optional)*: Default template configurations.  
+- **`ecosystem`** *(string)*: The class of your ecosystem.
+- **`data`** *(array)*: The data to be injected into the ecosystem.
+- **`templates_config`** *(array, optional)*: Default template configurations.
 
 ###### **Example:**
 ```php
@@ -184,15 +184,15 @@ $crafteusApp = Crafteus::make(
 ```
 📌 **Note:** The method `make(string $ecosystem, array $data, array $templates_config = [])` returns an instance of `Crafteus\Environment\App`.
 
-##### **2. Generating Files**  
+##### **2. Generating Files**
 
-Once the Crafteus application is created, you can generate files for your ecosystem using the `generate()` method:  
+Once the Crafteus application is created, you can generate files for your ecosystem using the `generate()` method:
 
 ```php
 $crafteusApp->generate();
 ```
 
-📌 **Expected Output:** A structured array containing the results of the file generation for each foundation and its associated templates.  
+📌 **Expected Output:** A structured array containing the results of the file generation for each foundation and its associated templates.
 ```php
 [
     'foundation1' => [
@@ -211,25 +211,25 @@ $crafteusApp->generate();
 ];
 ```
 
-📌 **Error Handling:**  
-If a stub fails to generate, you can retrieve the related errors using:  
+📌 **Error Handling:**
+If a stub fails to generate, you can retrieve the related errors using:
 ```php
 $crafteusApp->generate()['foundation2']['my-template1']['not_generated']['key_path']->getErrors();
 ```
 🔹 If this returns an empty array, it means the template's `generate` configuration was set to `false`.
 
-###### **Generating a Specific Foundation**  
+###### **Generating a Specific Foundation**
 You can also generate files for a single foundation:
 
 ```php
-$crafteusApp->getFoundation('foundation1')->getEcosystemInstance()->generateTemplates();
+$crafteusApp->getFoundation('foundation1')->ecosystemInstance()->generateTemplates();
 // or more simply
 $crafteusApp->foundation1->generateTemplates();
 
 $crafteusApp->getFoundation('foundation1')->generateEcosystem();
 ```
 
-📌 **Expected Output:**  
+📌 **Expected Output:**
 ```php
 [
     'my-template1' => true,
@@ -237,12 +237,12 @@ $crafteusApp->getFoundation('foundation1')->generateEcosystem();
 ]
 ```
 
-##### **3. Cancelling Generated Files**  
+##### **3. Cancelling Generated Files**
 
-If you need to cancel the generated files, use the following methods:  
+If you need to cancel the generated files, use the following methods:
 
 ```php
-$crafteusApp->getFoundation('foundation1')->getEcosystemInstance()->cancelTemplatesGenerated();
+$crafteusApp->getFoundation('foundation1')->ecosystemInstance()->cancelTemplatesGenerated();
 // or
 $crafteusApp->foundation1->cancelTemplatesGenerated();
 
@@ -250,22 +250,22 @@ $crafteusApp->getFoundation('foundation1')->cancelGeneratedEcosystem();
 $crafteusApp->cancelGenerated();
 ```
 
-📌 **Behavior:**  
-- If the generated file already exists, its content will be reset.  
+📌 **Behavior:**
+- If the generated file already exists, its content will be reset.
 - If the file does not exist, it will be deleted.
 
 ### Advance Usage
 Coming soon ...
 
-## **Features** ✨  
+## **Features** ✨
 
-- ✅ **Define powerful Ecosystems**: Organize file generation using structured **Ecosystems** that group multiple **Templates**.  
-- ⚡ **Flexible Template Configuration**: Control **file paths, extensions, stub sources, and generation rules** dynamically.  
-- 🔧 **Custom Transformations**: Modify stub content using **closures, custom classes, or predefined logic** before file generation.  
-- 🔗 **Multi-Path & Multi-Format Support**: Generate files in **multiple locations** with different **extensions** from a single template.  
-- 📂 **Batch File Generation**: Generate multiple files at once, with independent configurations for each.  
-- 🔄 **Rollback & Error Handling**: Easily cancel generated files or retrieve errors to debug failed generations.  
-- 🔥 **Dynamic Data Injection**: Pass structured **data arrays** to personalize generated content.  
+- ✅ **Define powerful Ecosystems**: Organize file generation using structured **Ecosystems** that group multiple **Templates**.
+- ⚡ **Flexible Template Configuration**: Control **file paths, extensions, stub sources, and generation rules** dynamically.
+- 🔧 **Custom Transformations**: Modify stub content using **closures, custom classes, or predefined logic** before file generation.
+- 🔗 **Multi-Path & Multi-Format Support**: Generate files in **multiple locations** with different **extensions** from a single template.
+- 📂 **Batch File Generation**: Generate multiple files at once, with independent configurations for each.
+- 🔄 **Rollback & Error Handling**: Easily cancel generated files or retrieve errors to debug failed generations.
+- 🔥 **Dynamic Data Injection**: Pass structured **data arrays** to personalize generated content.
 - 📌 **Seamless PHP Integration**: Works with any PHP project, requiring only **Composer** to install and use.
 
 ## Requirements
