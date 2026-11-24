@@ -25,4 +25,12 @@ interface EcosystemInitializable
 	 * @param T_Ecosystem $ecosystem The Ecosystem responsible for the initialization.
 	 */
 	public function afterInitialize(Ecosystem $ecosystem): void;
+
+	/**
+	 * Called after the template's configuration has been changed.
+	 *
+	 * @param array $old_config The configuration before the update.
+	 * @param T_Ecosystem $ecosystem The ecosystem that performed the configuration update.
+	 */
+	public function afterConfigurationChanged(array $old_config, Ecosystem $ecosystem): void;
 }

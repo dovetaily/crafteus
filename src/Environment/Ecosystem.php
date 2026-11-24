@@ -340,7 +340,10 @@ class Ecosystem
 	 * @throws \Crafteus\Exceptions\TemplateValidationException
 	 *         If validation errors are found.
 	 * @throws \Crafteus\Exceptions\InvalidTemplatePropertyException
+	 *         If the template configuration contains an invalid key.
 	 * @throws \Crafteus\Exceptions\MissingConfigKeyException
+	 *         If `config` key is missed on template configuration.
+	 *
 	 */
 	public function templateInstance(string|int $template_name, array $more_config = []): Template|false
 	{
@@ -431,8 +434,14 @@ class Ecosystem
 				}
 			}
 
-			if (method_exists($template_instance, 'afterConfigurationChanged')) {
-				$template_instance->afterConfigurationChanged(...[$origin_config]); // old_config
+			if (
+				is_subclass_of(
+					$template_instance,
+					EcosystemInitializable::class
+				) ||
+				method_exists($template_instance, 'afterConfigurationChanged')
+			) {
+				$template_instance->afterConfigurationChanged(...[$origin_config, $this]); // old_config
 			}
 			// update config stop...
 
@@ -479,6 +488,7 @@ class Ecosystem
 	 * @throws \Crafteus\Exceptions\MissingConfigKeyException
 	 *         If `config` key is missed on template configuration.
 	 * @throws \Crafteus\Exceptions\InvalidTemplatePropertyException
+	 *         If the template configuration contains an invalid key.
 	 */
 	private function getTemplateInstanceWithTemplateConfig(
 		array &$template,
