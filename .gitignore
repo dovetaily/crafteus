@@ -16,6 +16,9 @@
 
 # Temporary files
 *.tmp
+.temp
 
 # Mkdocs Build
 /site/
+
+docs/**/cache

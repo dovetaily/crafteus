@@ -1,5 +1,6 @@
 {
   "name": "dovetaily/crafteus",
+  "version": "1.0.0",
   "type": "library",
   "license": "Apache-2.0",
   "description": "An advanced tool for generating stub files from custom 'Ecosystems'. Designers can create Ecosystems composed of multiple dynamic Templates, defining specific configurations and transformation logic. Users can leverage these Ecosystems to provide data, which will be processed by the designers' configurations and transformed into tailored stub files.",
@@ -20,16 +21,12 @@
     }
   },
   "scripts": {
-    "test": "vendor\\bin\\phpunit",
-    "test-unit-app": "vendor\\bin\\phpunit tests\\Unit\\Environment\\AppTest.php",
-    "test-unit-foundation": "vendor\\bin\\phpunit tests\\Unit\\Environment\\FoundationTest.php",
-    "test-unit-ecosystem": "vendor\\bin\\phpunit tests\\Unit\\Environment\\EcosystemTest.php",
-    "test-unit-template": "vendor\\bin\\phpunit tests\\Unit\\Environment\\TemplateTest.php",
-    "test-unit-stub": "vendor\\bin\\phpunit tests\\Unit\\Environment\\StubTest.php",
-
-    "docs": "mkdocs serve -a localhost:8182 --open",
-    "dev-docs": "nodemon --watch docs --watch mkdocs.yml --ext md,yml --exec \"mkdocs serve -a localhost:8182\"",
-    "build-docs": "mkdocs build",
+    "test": "vendor/bin/phpunit",
+    "test-unit-app": "vendor/bin/phpunit tests/Unit/Environment/AppTest.php",
+    "test-unit-foundation": "vendor/bin/phpunit tests/Unit/Environment/FoundationTest.php",
+    "test-unit-ecosystem": "vendor/bin/phpunit tests/Unit/Environment/EcosystemTest.php",
+    "test-unit-template": "vendor/bin/phpunit tests/Unit/Environment/TemplateTest.php",
+    "test-unit-stub": "vendor/bin/phpunit tests/Unit/Environment/StubTest.php",
 
     "phpstan": "phpstan analyse"
   },
