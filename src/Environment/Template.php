@@ -60,7 +60,7 @@ use Crafteus\Support\Helper;
  * @phpstan-type TTemplateObjectConfig array{
  *   path: TTemplatePathProperty,
  *   extension: TTemplateExtensionProperty,
- *   stubFile: TTemplateStubFileProperty,
+ *   stub_file: TTemplateStubFileProperty,
  *   generate: TTemplateGenerateProperty,
  *   templating?: TTemplateTemplatingProperty,
  *   transformBasename?: \Closure(string $pathKey, \Crafteus\Environment\Support\AnonymousTemplate $anonymous_template): string
@@ -71,7 +71,7 @@ use Crafteus\Support\Helper;
  *
  *   extension?: TTemplateExtensionProperty,
  *
- *   stubFile?: TTemplateStubFileProperty,
+ *   stub_file?: TTemplateStubFileProperty,
  *
  *   generate?: TTemplateGenerateProperty,
  *

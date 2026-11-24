@@ -24,6 +24,7 @@ use Crafteus\Support\Helper;
  * @phpstan-import-type TTemplateObjectConfig from \Crafteus\Environment\Template
  * @phpstan-import-type TTemplatesConfigPartial from \Crafteus\Environment\Template
  * @phpstan-import-type TTemplateObjectConfigPartial from \Crafteus\Environment\Template
+ * @phpstan-import-type TTemplateRule from \Crafteus\Environment\Template
  *
  * @template T_Templates of array<string|int, \Crafteus\Environment\Template>
  * @template T_TemplatesConfigPartial of TTemplatesConfigPartial
@@ -48,7 +49,8 @@ use Crafteus\Support\Helper;
  * @phpstan-type TEcosystemTemplateConfigKeysPartial array{
  *   config?: TTemplateObjectConfig,
  *   rules?: array{
- *     config?: array<mixed>
+ *     config?: array<TTemplateRule>,
+ *     data?: array<TTemplateRule>
  *   },
  *   afterConfigUpdated?: \Closure(
  *     TTemplateObjectConfig $newConfig,
@@ -65,8 +67,16 @@ use Crafteus\Support\Helper;
  * @method void afterFoundationCleanEcosystem(\Crafteus\Environment\Foundation<static> $foundation) Executes actions after the foundation has cleaned (reviewed and fixed) all ecosystem templates.
  * @method void afterFoundationCleanTemplateEcosystem(\Crafteus\Environment\Template<static> $template, static $ecosystem) Executes actions after the foundation has cleaned (reviewed and fixed) ecosystem template.
  */
-class Ecosystem
+abstract class Ecosystem
 {
+	/**
+	 * Abstract method that must be implemented in subclasses
+	 * to provide templates.
+	 *
+	 * @return TEcosystemTemplates An array of templates.
+	 */
+	abstract public function template(): array;
+
 	/**
 	 * Indicates whether existing files should be replaced.
 	 *
@@ -113,21 +123,6 @@ class Ecosystem
 
 
 
-
-	/**
-	 * Abstract method that must be implemented in subclasses
-	 * to provide templates.
-	 *
-	 * @return TEcosystemTemplates An array of templates.
-	 *
-	 * @throws \Crafteus\Exceptions\EcosystemMissingMethodException If the method is not implemented.
-	 */
-	public function template(): array
-	{
-		throw new EcosystemMissingMethodException(static::class, 'template', 3300);
-
-		return [];
-	}
 
 	/**
 	 * Obtain if you have to initialize the contents of the stub.
