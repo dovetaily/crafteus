@@ -7,6 +7,14 @@ use Crafteus\Support\Rule;
 /**
  * @phpstan-import-type TRuleVerifyCallable from \Crafteus\Support\Rule
  *
+ * @phpstan-type TRuleVerifyMethod
+ *   'file_exists'
+ *   |'class-string'
+ *   |'array<file_exists>'
+ *   |'array<is_readable>'
+ *   |'array'
+ *   |'regexp'
+ *
  * @phpstan-type TRuleVerificationClosure \Closure(
  *   mixed $data,
  *   bool $data_exists,

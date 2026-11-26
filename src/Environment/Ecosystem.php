@@ -25,6 +25,7 @@ use Crafteus\Support\Helper;
  * @phpstan-import-type TTemplatesConfigPartial from \Crafteus\Environment\Template
  * @phpstan-import-type TTemplateObjectConfigPartial from \Crafteus\Environment\Template
  * @phpstan-import-type TTemplateRule from \Crafteus\Environment\Template
+ * @phpstan-import-type TTemplateDefaultRuleConfig from \Crafteus\Environment\Template
  *
  * @template T_Templates of array<string|int, \Crafteus\Environment\Template>
  * @template T_TemplatesConfigPartial of TTemplatesConfigPartial
@@ -306,7 +307,7 @@ abstract class Ecosystem
 	 *
 	 * @param array $rule Additional rules to apply.
 	 *
-	 * @return array The default rule configuration.
+	 * @return TTemplateDefaultRuleConfig The default rule configuration.
 	 */
 	public static function getDefaultTemplateRule(array $rule = []): array
 	{

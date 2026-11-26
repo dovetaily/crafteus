@@ -10,6 +10,7 @@ use Crafteus\Support\Helper;
 /**
  * @phpstan-import-type TRuleTypes from \Crafteus\Support\Rule
  * @phpstan-import-type TRuleVerifyCallable from \Crafteus\Support\Rule
+ * @phpstan-import-type TRuleVerifyMethod from \Crafteus\Support\Traits\RuleVerify
  *
  * @template T_Ecosystem of \Crafteus\Environment\Ecosystem
  * @template T_Templating of \Crafteus\Environment\Support\Templating|\Crafteus\Contracts\TemplatingInterface
@@ -18,14 +19,14 @@ use Crafteus\Support\Helper;
  *   required: bool,
  *   empty?: bool,
  *   type?: TRuleTypes|array<TRuleTypes>,
- *   verify?: string|TRuleVerifyCallable|array<string|TRuleVerifyCallable>
+ *   verify?: TRuleVerifyMethod|TRuleVerifyCallable|array<TRuleVerifyMethod|TRuleVerifyCallable>
  * }
  *
  * @phpstan-type TTemplateRulePartial array{
  *   required?: bool,
  *   empty?: bool,
  *   type?: TRuleTypes|array<TRuleTypes>,
- *   verify?: string|TRuleVerifyCallable|array<string|TRuleVerifyCallable>
+ *   verify?: TRuleVerifyMethod|TRuleVerifyCallable|array<TRuleVerifyMethod|TRuleVerifyCallable>
  * }
  *
  * @phpstan-type TTemplateDefaultRuleConfig array{
