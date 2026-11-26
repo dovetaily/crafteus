@@ -1175,7 +1175,7 @@ class Stub extends SplFileInfo
 
 		restore_error_handler();
 
-		return $content ?? '';
+		return $content ?: '';
 	}
 
 	/**

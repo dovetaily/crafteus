@@ -180,6 +180,7 @@ trait TemplateRule
 				'required' => true,
 				// 'empty' => false,
 				'type' => 'array|boolean',
+				'verify' => 'array<boolean>',
 			],
 			'templating' => [
 				'required' => false,
