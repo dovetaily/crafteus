@@ -575,7 +575,7 @@ class Template
 	 */
 	protected function getExtension(string|int $key, bool $last = false): string
 	{
-		return self::getUniqueConfig($this->extension, $key, $last, false, "");
+		return static::getUniqueConfig($this->extension, $key, $last, false, "");
 	}
 
 	/**
@@ -591,7 +591,7 @@ class Template
 	 */
 	protected function getStubFile(string|int $key, bool $last = false): string
 	{
-		return self::getUniqueConfig($this->stub_file, $key, $last, false, "");
+		return static::getUniqueConfig($this->stub_file, $key, $last, false, "");
 	}
 
 	/**
@@ -607,7 +607,7 @@ class Template
 	 */
 	protected function getGenerate(string|int $key, bool $last = false): bool
 	{
-		return self::getUniqueConfig($this->generate, $key, $last);
+		return static::getUniqueConfig($this->generate, $key, $last);
 	}
 
 	/**
@@ -624,7 +624,7 @@ class Template
 	 */
 	protected function getTemplating(string|int $key, bool $last = false): string|\Closure|null
 	{
-		return self::getUniqueConfig(
+		return static::getUniqueConfig(
 			$this->templating,
 			$key,
 			$last,
