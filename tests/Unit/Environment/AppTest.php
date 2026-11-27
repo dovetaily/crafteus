@@ -9,8 +9,8 @@ use Crafteus\Environment\Foundation;
 use Crafteus\Environment\Stub;
 use Crafteus\Exceptions\FoundationAlreadyExistsException;
 use Crafteus\Support\Helper;
-use Crafteus\Support\MockEcosystem;
-use Crafteus\Support\TestCase;
+use Crafteus\Support\Tests\MockEcosystem;
+use Crafteus\Support\Tests\TestCase;
 
 final class AppTest extends TestCase
 {

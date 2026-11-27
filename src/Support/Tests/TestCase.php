@@ -1,15 +1,14 @@
 <?php
 
-namespace Crafteus\Support;
+namespace Crafteus\Support\Tests;
+
+use PHPUnit\Framework\TestCase as BaseTestCase;
 
 use Crafteus\Crafteus;
-use Crafteus\Environment\App;
-use Crafteus\Environment\Ecosystem;
-use Crafteus\Support\Mock;
 use Crafteus\Support\Helper;
-use Crafteus\Support\MockEcosystem;
-use Crafteus\Support\Traits\MockApp;
-use PHPUnit\Framework\TestCase as BaseTestCase;
+use Crafteus\Support\Tests\Mock;
+use Crafteus\Support\Tests\MockEcosystem;
+use Crafteus\Support\Tests\Traits\MockApp;
 
 /**
  * @phpstan-import-type TEcosystemTemplateConfigKeysPartial from \Crafteus\Environment\Ecosystem

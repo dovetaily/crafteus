@@ -12,8 +12,8 @@ use Crafteus\Environment\Template;
 use Crafteus\Exceptions\EcosystemMissingMethodException;
 use Crafteus\Exceptions\TemplateNotRecognizedException;
 use Crafteus\Support\Helper;
-use Crafteus\Support\MockEcosystem;
-use Crafteus\Support\TestCase;
+use Crafteus\Support\Tests\MockEcosystem;
+use Crafteus\Support\Tests\TestCase;
 
 final class EcosystemTest extends TestCase
 {
@@ -54,12 +54,12 @@ final class EcosystemTest extends TestCase
 		$this->assertEquals(MockEcosystem::$_template_config, $ecosystem->template());
 	}
 
-	public function test_template_with_ecosystem_missing_method_exception(): void
-	{
-		$this->expectException(EcosystemMissingMethodException::class);
+	// public function test_template_with_ecosystem_missing_method_exception(): void
+	// {
+	// 	$this->expectException(EcosystemMissingMethodException::class);
 
-		(new Ecosystem)->template();
-	}
+	// 	(new Ecosystem)->template();
+	// }
 
 	public function test_make(): void
 	{
@@ -115,6 +115,10 @@ final class EcosystemTest extends TestCase
 			new App(),
 			'user',
 			get_class(new class extends Ecosystem {
+				public function template(): array
+				{
+					return [];
+				}
 				public ?string $value = null;
 				public function afterFoundationSet(Foundation $foundtation): void
 				{

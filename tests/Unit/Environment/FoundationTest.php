@@ -10,8 +10,8 @@ use Crafteus\Environment\Stub;
 use Crafteus\Environment\Template;
 use Crafteus\Exceptions\InvalidEcosystemException;
 use Crafteus\Support\Helper;
-use Crafteus\Support\MockEcosystem;
-use Crafteus\Support\TestCase;
+use Crafteus\Support\Tests\MockEcosystem;
+use Crafteus\Support\Tests\TestCase;
 
 final class FoundationTest extends TestCase
 {

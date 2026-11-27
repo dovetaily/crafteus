@@ -21,9 +21,9 @@ use Crafteus\Exceptions\TemplateValidationException;
 use Crafteus\Exceptions\UnableToResolveTemplateBasenameException;
 use Crafteus\Exceptions\UrlLoadStubException;
 use Crafteus\Support\Helper;
-use Crafteus\Support\Mock;
-use Crafteus\Support\MockEcosystem;
-use Crafteus\Support\TestCase;
+use Crafteus\Support\Tests\Mock;
+use Crafteus\Support\Tests\MockEcosystem;
+use Crafteus\Support\Tests\TestCase;
 
 /**
  * @phpstan-import-type TTemplateObjectConfigPartial from \Crafteus\Environment\Template

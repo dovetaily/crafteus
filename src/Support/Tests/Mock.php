@@ -1,14 +1,13 @@
 <?php
 
-namespace Crafteus\Support;
+namespace Crafteus\Support\Tests;
 
 use Crafteus\Crafteus;
 use Crafteus\Environment\App;
 use Crafteus\Environment\Ecosystem;
-use Crafteus\Environment\Foundation;
-use Crafteus\Environment\Template;
-use Crafteus\Support\Traits\MockData;
-use Crafteus\Support\Traits\MockTempDir;
+use Crafteus\Support\Helper;
+use Crafteus\Support\Tests\Traits\MockData;
+use Crafteus\Support\Tests\Traits\MockTempDir;
 
 
 /**

@@ -1,6 +1,6 @@
 <?php
 
-namespace Crafteus\Support\Traits;
+namespace Crafteus\Support\Tests\Traits;
 
 use Crafteus\Support\Helper;
 

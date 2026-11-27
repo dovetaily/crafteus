@@ -17,9 +17,9 @@ use Crafteus\Exceptions\TemplateNotRecognizedException;
 use Crafteus\Exceptions\TemplateValidationException;
 use Crafteus\Exceptions\UnableToResolveTemplateBasenameException;
 use Crafteus\Support\Helper;
-use Crafteus\Support\Mock;
-use Crafteus\Support\MockEcosystem;
-use Crafteus\Support\TestCase;
+use Crafteus\Support\Tests\Mock;
+use Crafteus\Support\Tests\MockEcosystem;
+use Crafteus\Support\Tests\TestCase;
 
 /**
  * @phpstan-import-type TTemplateObjectConfigPartial from \Crafteus\Environment\Template
@@ -95,7 +95,12 @@ final class TemplateTest extends TestCase
 
 	public function test_set_ecosystem_triggers_warning_from_external_class(): void
 	{
-		$ecosystem = new Ecosystem();
+		$ecosystem = new class extends Ecosystem {
+			public function template(): array
+			{
+				return [];
+			}
+		};
 
 		$warning = null;
 

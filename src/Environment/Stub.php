@@ -859,8 +859,10 @@ class Stub extends SplFileInfo
 			}
 		} catch (\Throwable $th) {
 			$this->addErrors(new TemplatingException(
-				$this->getTemplate()?->getTemplateName(),
-				$this->getTemplate() ? get_class($this->getTemplate()) : 'unknow',
+				$this->getTemplate()?->getTemplateName() ?? 'unknown-template-name',
+				$this->getTemplate()
+					? get_class($this->getTemplate())
+					: 'unknown-template-class',
 				$this->key_id,
 				is_string($templating)
 					? $templating

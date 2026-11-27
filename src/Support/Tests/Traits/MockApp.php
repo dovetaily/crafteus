@@ -1,9 +1,9 @@
 <?php
 
-namespace Crafteus\Support\Traits;
+namespace Crafteus\Support\Tests\Traits;
 
 use Crafteus\Environment\App;
-use Crafteus\Support\Mock;
+use Crafteus\Support\Tests\Mock;
 
 /**
  * @phpstan-import-type TEcosystemTemplateConfigKeysPartial from \Crafteus\Environment\Ecosystem
